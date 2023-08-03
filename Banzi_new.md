@@ -12,6 +12,10 @@
 
 其实就有点像[并查集](https://so.csdn.net/so/search?q=并查集&spm=1001.2101.3001.7020)里面的启发式合并，只不过是在树上做信息合并罢了。
 
+例题
+
+给出一个树，求出每个节点的子树中出现次数最多的颜色的编号和
+
 ```
 struct ty
 {
@@ -111,7 +115,138 @@ void solve()
 }
 ```
 
+大意：
+
+给定一棵以 1 为根，n 个节点的树。设 d(u,x) 为 u 子树中到 u 距离为 x 的节点数。
+
+对于每个点，求一个最小的 k，使得d(u,k) 最大。
+
+思路：
+
+跟前面差不多，维护一下深度再记录一下最大值就可以了
+
+考虑到最大值标记ma在add操作中不能重置，我们应该在撤销影响后初始化ma
+
+```
+#include<bits/stdc++.h>
+using namespace std;
+#define ll int
+#define endl '\n'
+const ll N=1e6+10;
+struct ty
+{
+	ll t,l,next;
+}edge[N<<1];
+ll cn=0;
+ll head[N];
+void add_edge(ll a,ll b,ll c)
+{
+	edge[++cn].t=b;
+	edge[cn].l=c;
+	edge[cn].next=head[a];
+	head[a]=cn;
+}
+ll n,m;
+ll siz[N],son[N],dep[N],col[N];
+ll cnt[N],ans[N];
+ll son_flag=0;
+ll ma=0,p=0;
+void init_dfs(ll id,ll fa)
+{
+	siz[id]=1;
+	ll sn=0;
+	for(int i=head[id];i!=-1;i=edge[i].next)
+	{
+		ll y=edge[i].t;
+		if(y==fa) continue;
+		dep[y]=dep[id]+1;
+		init_dfs(y,id);
+		siz[id]+=siz[y];
+		if(siz[y]>siz[sn])
+		{
+			sn=y;
+		}
+	}
+	son[id]=sn;
+}
+void add(ll id,ll fa,ll val)
+{
+	cnt[dep[id]]+=val;
+	if(cnt[dep[id]]>ma||(cnt[dep[id]]==ma&&dep[id]<p))
+	{
+		ma=cnt[dep[id]];
+		p=dep[id];
+	}
+	for(int i=head[id];i!=-1;i=edge[i].next)
+	{
+		ll y=edge[i].t;
+		if(y==son_flag||y==fa) continue;
+		add(y,id,val);
+	}
+}
+void dfs2(ll id,ll fa,ll kp)
+{
+	for(int i=head[id];i!=-1;i=edge[i].next)
+	{
+		ll y=edge[i].t;
+		if(y==fa||y==son[id]) continue;
+		dfs2(y,id,0);
+	}
+	if(son[id])
+	{
+		dfs2(son[id],id,1);
+		son_flag=son[id];
+	}
+	
+	add(id,fa,1);
+	son_flag=0;
+	//统计
+	//cout<<id<<' '<<ma<<" "<<p<<' '<<dep[id]<<endl;
+	ans[id]=p-dep[id];
+	
+	if(kp==0)
+	{
+		add(id,fa,-1);
+		ma=0,p=0;
+	}
+	//
+}
+void solve()
+{
+	memset(head,-1,sizeof head);
+	cin>>n;
+	for(int i=2;i<=n;++i)
+	{
+		ll a,b;
+		cin>>a>>b;
+		add_edge(a,b,1);
+		add_edge(b,a,1);	
+	}
+	init_dfs(1,0);
+	dfs2(1,0,1);
+	for(int i=1;i<=n;++i) cout<<ans[i]<<endl;
+} 
+int main()
+{
+	ios::sync_with_stdio(0);cin.tie(0);cout.tie(0);
+	solve();
+	return 0;
+}
+```
+
+
+
 ## 点分治
+
+有时候我们会碰到一些树上的路径问题，如果需要处理的规模很大的话，这时候点[分治](https://so.csdn.net/so/search?q=分治&spm=1001.2101.3001.7020)是一个很好的工具，往往可以在O(nlogn)的复杂度内完成操作，一般用于离线处理问题
+
+模板题
+
+大意：大小为n的树，m次询问，查询树上是否存在长度为k的路径，
+
+1≤n≤10^4,1≤m≤100,1≤k≤10^7
+
+思路：点分治的话复杂度是nmlogn，吃得住
 
 ```
 ll n,m;
@@ -211,6 +346,290 @@ void solve()
 	}
 }
 ```
+
+树上路径长%3=0的有序点对数量
+
+```
+#include<bits/stdc++.h>
+using namespace std;
+#define ll long long
+#define endl '\n'
+const ll N=2e4+10;
+struct ty
+{
+	ll t,l,next;
+}edge[N<<1];
+ll cn=0;
+ll head[N];
+void add(ll a,ll b,ll c)
+{
+	edge[++cn].t=b;
+	edge[cn].l=c;
+	edge[cn].next=head[a];
+	head[a]=cn;
+}
+ll n,m,a,b,c;
+ll nc;//当前子树的大小
+ll siz[N],mx[N];
+ll rt;
+ll vis[N],dis_vis[5];
+ll cnt,dis[N],d[5];
+//d:路径长为d[i]的点数 
+ll ans;
+void get_rt(ll id,ll fa)
+{
+	siz[id]=1;
+	mx[id]=0;//最大子树初始化！ 
+	for(int i=head[id];i!=-1;i=edge[i].next)
+	{
+		ll y=edge[i].t;
+		if(y==fa||vis[y]) continue;
+		get_rt(y,id);
+		siz[id]+=siz[y];
+		mx[id]=max(mx[id],siz[y]);
+	}
+	mx[id]=max(mx[id],nc-mx[id]);
+	if(mx[id]<mx[rt])
+	{
+		rt=id;
+	}
+}
+void get_dis(ll id,ll fa)
+{
+	d[dis[id]]++;
+	for(int i=head[id];i!=-1;i=edge[i].next)
+	{
+		ll y=edge[i].t;
+		if(y==fa||vis[y]) continue;
+		dis[y]=(edge[i].l+dis[id])%3;
+		get_dis(y,id);	
+	}	
+} 
+void calc(ll id)
+{
+	dis_vis[0]=1;//到自己的路径长
+	for(int i=head[id];i!=-1;i=edge[i].next)
+	{
+		ll y=edge[i].t;
+		if(vis[y]) continue;
+		for(int i=0;i<=3;++i) d[i]=0;
+		dis[y]=edge[i].l;
+		get_dis(y,id);
+		for(int i=0;i<3;++i)
+		{
+			ans+=2*dis_vis[i]*d[(3-i)%3];	
+			dis_vis[i]+=d[i];
+		} 
+	} 
+	//ans+=d[0]*d[0]+d[1]*d[2]*2;
+	for(int i=0;i<=3;++i) dis_vis[i]=0;
+}
+void dfz_(ll id)
+{
+	calc(id);//统计过根的路径长&数量 
+	vis[id]=1;
+	for(int i=head[id];i!=-1;i=edge[i].next)
+	{
+		ll y=edge[i].t;
+		if(vis[y]) continue;
+		rt=0;
+		nc=mx[rt]=siz[y];
+		get_rt(y,0);get_rt(rt,0);
+		dfz_(rt);
+	} 
+}
+void solve()
+{
+	memset(head,-1,sizeof head);
+	cin>>n;
+	for(int i=1;i<n;++i)
+	{
+		cin>>a>>b>>c;
+		add(a,b,c%3);
+		add(b,a,c%3);
+	}
+//	for(int i=1;i<=m;++i) cin>>Q[i];
+	nc=mx[0]=n;
+	get_rt(1,0);
+	get_rt(rt,0);
+	dfz_(rt);
+	ans+=n;
+	ll fm=n*n;
+	ll g=__gcd(ans,fm);
+	cout<<ans/g<<'/'<<fm/g<<endl;
+}
+int main()
+{
+	ios::sync_with_stdio(0);cin.tie(0);cout.tie(0);
+	solve();
+	return 0; 
+}
+```
+
+### 关于统计点上信息的处理
+
+可见大部分问题都是关于路径信息的，如果变成点上信息的话，每一个分治查询的根节点就也会对子树的情况产生影响。我们可以在一开始先不更新根节点信息，然后在子树内节点更新信息的时候，把根节点的信息加上去，然后去除影响之前，先撤掉根节点的信息。具体实现可以看代码
+
+大意：树上每一个点有一个颜色a/b/c，统计树上有多少条路径满足其上三种颜色的数量一样多
+
+```
+#include<bits/stdc++.h>
+using namespace std;
+#define ll int
+#define endl '\n'
+#define pii pair<ll,ll>
+const ll N=1e5+10;
+struct ty
+{
+    ll t,l,next;
+}edge[N<<1];
+ll cn=0;
+ll head[N];
+char col[N];
+void add(ll a,ll b,ll c)
+{
+    edge[++cn].t=b;
+    edge[cn].l=c;
+    edge[cn].next=head[a];
+    head[a]=cn;
+}
+ll n,m;
+pii ini,ii;
+ll a,b,c;
+ll siz[N],mx[N],rt,nt;
+// siz子树大小 dis到根的距离 mx最大子树对应节点
+ll cnt;//当前存在的路径长度
+map<pii,ll> dis_vis;
+pii dis[N],d[N];
+//节点是否已经分治过，在某次分治中距离为dis_vis[i]的节点是否存在
+ll ans;
+ll vis[N];
+pii upd(pii p,ll id)
+{
+    pii pp=p;
+    if(col[id]=='a') pp.first++;
+    if(col[id]=='b') pp.first--,pp.second++;
+    if(col[id]=='c') pp.second--;
+    return pp;
+}
+pii operator +(pii a,pii b)
+{
+    pii c=a;
+    c.first+=b.first;
+    c.second+=b.second;
+    return c;
+}
+pii operator -(pii a,pii b)
+{
+    pii c=a;
+    c.first-=b.first;
+    c.second-=b.second;
+    return c;
+}
+void find_rt(ll id,ll fa)
+{
+    siz[id]=1;mx[id]=0;
+    for(int i=head[id];i!=-1;i=edge[i].next)
+    {
+        ll y=edge[i].t;
+        if(y==fa||vis[y]) continue;
+        find_rt(y,id);
+        mx[id]=max(mx[id],siz[y]);
+        siz[id]+=siz[y];
+    }
+    mx[id]=max(mx[id],nt-siz[id]);//这里是nt-siz[id],因为重心要在不同子树里面求
+    if(mx[id]<mx[rt])
+    {
+        rt=id;
+    }
+}
+void get_dis(ll id,ll fa)
+{
+    pii pre=dis[id]+ii;
+    d[++cnt]=pre;
+    // cout<<id<<' '<<fa<<' '<<pre.first<<' '<<pre.second<<endl;
+
+    for(int i=head[id];i!=-1;i=edge[i].next)
+    {
+        ll y=edge[i].t;
+        if(y==fa||vis[y]) continue;
+        dis[y]=upd(dis[id],y);
+        // cout<<y<<" "<<id<<' '<<dis[y].first<<" "<<dis[y].second<<endl;
+        get_dis(y,id);
+    }
+}
+
+void calc(ll id)//统计过根的路径
+{
+    ini.first=0;ini.second=0;
+    ii=ini;ii=upd(ii,id);
+    dis_vis[ini]=1;//根节点的情况
+    vector<pii> vt;vt.clear();
+    for(int i=head[id];i!=-1;i=edge[i].next)
+    {
+        ll y=edge[i].t;
+        if(vis[y]) continue;
+        cnt=0;//清空d数组
+        dis[y]=upd(ini,y);
+        // cout<<id<<" "<<y<<' '<<dis[y].first<<" "<<dis[y].second<<endl;
+
+        get_dis(y,id);
+        for(int j=1;j<=cnt;++j)
+        {
+            pii pre=d[j];pre.first*=-1;pre.second*=-1;
+            ans+=dis_vis[pre];
+        }
+        for(int j=1;j<=cnt;++j)
+        {
+            pii pre=d[j]-ii;
+            dis_vis[pre]++,vt.push_back(pre);
+        }
+    }
+    for(auto j:vt) dis_vis[j]=0;//路径初始化
+}
+void dfz_(ll id)//点分治
+{
+    calc(id);
+    vis[id]=1;
+    for(int i=head[id];i!=-1;i=edge[i].next)
+    {
+        ll y=edge[i].t;
+        if(vis[y]) continue;
+        //递归
+        rt=0;mx[rt]=nt=siz[y];
+        find_rt(y,0);find_rt(rt,0);//更新siz
+        dfz_(rt);
+    }
+}
+void solve()
+{
+    memset(head,-1,sizeof head);
+    cin>>n;
+    for(int i=1;i<=n;++i) dis[i]=make_pair(0,0);
+    for(int i=1;i<=n;++i) cin>>col[i];
+
+    for(int i=1;i<n;++i)
+    {
+        cin>>a>>b;
+        add(a,b,1);
+        add(b,a,1);
+    }
+    mx[0]=nt=n;
+    find_rt(1,0);
+    find_rt(rt,0);//更新siz数组，因为现在是以一个新的点为根节点
+    // cout<<rt<<endl;
+    dfz_(rt);
+    cout<<ans<<endl;
+}
+int main()
+{
+    ios::sync_with_stdio(0);cin.tie(0);cout.tie(0);
+    solve();
+}
+
+```
+
+
 
 ## 线性基
 
