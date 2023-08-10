@@ -641,6 +641,8 @@ int main()
 
 3.线性基元素的异或集合等于原数组元素的异或集合
 
+4.线性基中每一个元素的最高位的1必定不被更低位置的元素包含
+
 ---
 
 ### 求数组任意异或的最大值
@@ -729,6 +731,411 @@ void solve()
 	cout<<ans<<endl;
 }
 ```
+
+### 求数组异或最小值
+
+如果有元素不能插入线性基，那么最小值显然就是0，否则就是线性基里最小的元素，因为最小的元素无论异或谁都会变大
+
+### 求数组异或的第k小
+
+重新构造线性基，使p[i]的第 j 位在p[j]存在的情况下不为 1，这样异或p[j]一定使数值变大，抽象化为二进制便是取 p [ j ]相当于 j 位取 1，则可以将 k 进行按位查看是否异或得结果。
+
+tips：当线性基个数cnt小于 n 时，说明非满秩，所有结果中可以异或出 0，这样看来第 1 小得为 0 而非p[0],所以对k 减一。总的异或结果是不超过$2^{cnt}-1$的。
+
+```
+//#pragma GCC optimize("O3")
+//#pragma GCC optimize("unroll-loops")
+#include<iostream>
+#include<algorithm>
+#include<vector>
+#include<cstring>
+
+using namespace std;
+typedef long long ll;
+const int maxn=55;
+
+ll p[maxn],f[maxn],cnt,n,m,ans,u,v,w;
+
+inline void insert(ll x)
+{
+	for(int i=50;i>=0;i--)
+	{
+		if(x>>i&1)
+		{
+			if(!p[i]){p[i]=x; break;}
+			x^=p[i];
+		}
+	}
+	return;
+}
+
+inline void rebuild()
+{
+	for(int i=0;i<=50;i++)
+	{
+		for(int j=i-1;j>=0;j--)//尝试将自身低位去掉
+		{
+			if(p[i]>>j&1)p[i]^=p[j];
+		}
+		if(p[i])f[cnt++]=p[i];
+	}
+	return;
+}
+
+inline ll query(ll k)
+{
+	if(cnt!=n)k--;
+	if(k>=(1ll<<cnt))return -1;
+	ll ans=0;
+	for(int i=0;i<cnt;i++)ans^=f[i]*(k>>i&1);
+	return ans;
+}
+
+int main()
+{
+	ios::sync_with_stdio(false);
+	cin.tie(0); cout.tie(0);
+	cin>>n;
+	for(int i=1;i<=n;i++)
+	{
+		cin>>u,insert(u);
+	}
+	rebuild(),cin>>m;
+	for(int i=1;i<=m;i++)
+	{
+		ll k; cin>>k,cout<<query(k)<<"\n";
+	} 
+	return 0;
+}
+
+```
+
+
+
+### 利用线性基考虑异或出某一个数的方案数
+
+假设数组的大小为n，其线性基的大小为k，如过数字v能够被线性表出，则**异或出它的方案数就是$2^{n-k}$**，也就是线性基外的数字集合W的所有子集的数量。如果我们在W的子集中选择的是空集，线性基本身的元素自然可以构造出V，且方案数唯一。否则我们记选择的W的子集异或出来的结果为k，从高维往低位考虑，如果某一位需要翻转，只要异或上对应的元素即可。
+
+## 点分树
+
+动态点分治。把点分治过程中的的前后遍历到的重心在一颗虚树上连接起来，前者作为后者的父亲，这样整个虚树的树高只有log(n)级别。虚树上两个点x,y的lca一定在原树中位于它们的简单路径上，因为在lca作为重心之后它们才会被分到两个连通块。
+
+支持快速修改操作，但是这个操作修改的内容应该是与树的形态无关的（否则点分树统计的内容就没有意义了）
+
+点分树在递归进行点分治的过程中完成虚树的建立。
+
+实现细节：
+
+* 子连通块大小不要直接用 $size(to)$（这都是从淀粉质那里遗留下来的问题了，但依旧有人不重视）
+* 一般不需要把虚树的实际形态建出来，但如果能用到的话，注意不要和原树搞混。
+* 树状数组大小要设置得当。设 $now=|subtree(i)|$，由于 $i$ 在$ subtree(i)$中为重心，所以$ f1(i,j)$中 $j$的值域为 $0-now/2$，f2(i,j)中 j的值域为 $1-now$。由于下标可以为$ 0$，在树状数组内部还需要统一向后移一位。也就是说 $f1,f2 $的大小要分别设置为 $now/2+1 $和 $now+1 $。
+* 如果预处理了每个点在虚树上的祖先，修改 / 查询 中跳父亲时需要倒序枚举（具体见代码）。
+* 关于卡常：点分树做题经常会用到 vector,vector, set,set, multiset,multiset, priority queuepriority queue 之类的东西，如果您嫌弃它们太慢且不愿开 O2O2，自备几个能代替 STLSTL 的模板吧...
+
+模板题：维护一颗带点权树，需要支持两种操作：修改 x 的点权，查询与点 x距离不超过 K的点的权值之和。
+
+对于每一个点i统计在虚树中其子树内到其距离$\leq d$的点权之和，记为$f_1(i,d)$,在虚树上递归往上查看其父亲u的时候，我们记u与i在原树中的距离为$dis$,多余的贡献是在u子树内但是不在i子树内的点的贡献，也就是在u子树内但是不在x子树内且与x距离$\leq d-dis$的点权之和,也就是u子树内距离u$\leq d-dis$的点权之和减去x子树内距离u$\leq d-dis$的点权之和。所以再记录$f_2(i,d)$,表示距离x在虚树上的父亲u$\leq d$的点权之和，然后容斥计算即可。
+
+```
+#include<bits/stdc++.h>
+using namespace std;
+#define ll int
+#define endl '\n'
+#define low(x) x&(-x)
+#define Re ll
+const ll N=1e5+10;
+const ll inf=2e9;
+struct ty
+{
+    ll t,l,next;
+}edge[N<<1];
+ll cn=0;
+ll head[N],dep[N];
+void add(ll a,ll b,ll c)
+{
+    edge[++cn].t=b;
+    edge[cn].l=c;
+    edge[cn].next=head[a];
+    head[a]=cn;
+}
+struct LCA
+{
+    ll F[N],son[N],siz[N],top[N];
+
+    void init_dfs(ll id,ll fa)
+    {
+        dep[id]=dep[fa]+1;
+        F[id]=fa;
+        siz[id]=1;
+        son[id]=0;
+        top[id]=0;
+        for(int i=head[id];i!=-1;i=edge[i].next)
+        {
+            ll y=edge[i].t;
+            if(y==fa) continue;
+            init_dfs(y,id);
+            siz[id]+=siz[y];
+            if(siz[y]>siz[son[id]])
+            {
+                son[id]=y;
+            }
+        }
+    }
+    void dfs2(ll id,ll p)
+    {
+        top[id]=p;
+        if(!son[id])return;
+        dfs2(son[id],p);
+        for(int i=head[id];i!=-1;i=edge[i].next)
+        {
+            ll y=edge[i].t;
+            if(y!=F[id]&&y!=son[id]) dfs2(y,y);
+        }
+    }
+    ll gt_lca(ll x,ll y)
+    {
+        while(top[x]!=top[y])
+        {
+            if(dep[top[x]]<dep[top[y]]) swap(x,y);
+            x=F[top[x]];
+        }
+        return dep[x]>dep[y]?y:x;
+    }
+    void init()
+    {
+        init_dfs(1,0);
+        dfs2(1,1);
+    }
+}T;
+struct Bit
+{
+    ll n;vector<ll> tr;
+    void init(ll M)
+    {
+        n=M;
+        tr.resize(n+2);
+    }
+    void add(ll x,ll y)
+    {
+        x++;
+        while(x<=n)
+        {
+            tr[x]+=y;
+            x+=low(x);
+        }
+    }
+    ll sum(ll x)
+    {
+        x++;x=min(x,n);
+        ll ans=0;
+        while(x)
+        {
+            ans+=tr[x];
+            x-=low(x);
+        }
+        return ans;
+    }
+}tr1[N],tr2[N];
+ll vis[N],mx[N],siz[N],fa[N];//fa表示虚树中的父亲
+ll rt,nt;//当前的根，当前处理的连通块的大小
+ll get_dis(ll x,ll y)
+{
+    //返回真实树中两点的距离
+    return dep[x]+dep[y]-dep[T.gt_lca(x,y)]*2;
+}
+void find_rt(ll id,ll fa)
+{
+    siz[id]=1;mx[id]=0;
+    for(int i=head[id];i!=-1;i=edge[i].next)
+    {
+        ll y=edge[i].t;
+        if(y==fa||vis[y]) continue;
+        find_rt(y,id);
+        mx[id]=max(mx[id],siz[y]);
+        siz[id]+=siz[y];
+    }
+    mx[id]=max(mx[id],nt-siz[id]);//这里是nt-siz[id],因为重心要在不同子树里面求
+    if(mx[id]<mx[rt])
+    {
+        rt=id;
+    }
+}
+void dfz_(ll id,ll p)//点分治
+{
+    ll now=nt;vis[id]=1,fa[id]=p;
+    tr1[id].init(now/2+1),tr2[id].init(now+1);//由重心性质可知,TR1会使用[0,now/2],TR2会使用[1,now]，向后移一位变为[1,now/2+1]和[2,now+1]
+    for(int i=head[id];i!=-1;i=edge[i].next)
+    {
+        ll y=edge[i].t;
+        if(vis[y]) continue;
+        //递归
+        nt=siz[y]>siz[id]?now-siz[id]:siz[y];
+        rt=0;mx[rt]=inf;
+        find_rt(y,0);find_rt(rt,0);//更新siz
+        dfz_(rt,id);
+    }
+}
+ll n,val[N],k,q,op,nans;
+void change(ll x,ll y)//val[x]+=y
+{
+    tr1[x].add(0,y);
+    for(int i=x;fa[i];i=fa[i])
+    {
+        ll Dis=get_dis(x,fa[i]);
+        tr1[fa[i]].add(Dis,y);
+        tr2[i].add(Dis,y);
+    }
+}
+ll query(ll x,ll d)//到x的距离为d
+{
+    ll ans=tr1[x].sum(d);
+    for(int i=x;fa[i];i=fa[i])
+    {
+        ll Dis=get_dis(x,fa[i]);
+        if(Dis>d) continue;
+        ans+=tr1[fa[i]].sum(d-Dis);
+        ans-=tr2[i].sum(d-Dis);
+    }
+    return ans;
+}
+void solve()
+{
+    memset(head,-1,sizeof head);
+    cin>>n>>q;
+    for(int i=1;i<=n;++i) cin>>val[i];
+    for(int i=1;i<n;++i)
+    {
+        ll a,b;cin>>a>>b;
+        add(a,b,1);add(b,a,1);
+    }
+    T.init();
+    nt=n,rt=0,mx[rt]=inf;
+    find_rt(1,0);find_rt(rt,0);
+    dfz_(rt,0);
+    for(int i=1;i<=n;++i) change(i,val[i]);
+    ll ans=0;
+    while(q--)
+    {
+        ll x,y;
+        cin>>op>>x>>y;
+        x^=ans;y^=ans;
+        if(op==0)
+        {
+            nans=query(x,y);
+            ans=nans;
+            cout<<nans<<endl;
+            continue;
+        }
+        change(x,y-val[x]);
+        val[x]=y;
+    }
+}
+int main()
+{
+    // freopen("P6329_1.in","r",stdin);
+    ios::sync_with_stdio(0);cin.tie(0);cout.tie(0);
+    solve();
+    return 0;
+}
+
+```
+
+
+
+## 李超线段树
+
+$O(nlon)$统计某一点最大/最小值线段对应的值
+
+该模板为统计最大值
+
+```
+namespace LcTree
+{
+    struct ty
+    {
+        ll l,r;
+        double k,b;//记录线段的斜率，截距
+        ll fl;//是否插入过线段
+        /*
+            如果线段可能存在小于0的情况，可能会需要维护该区间是否有插入线段
+            该模板没有维护该情况，若需要请自行修改
+        */
+        // #define ls p<<1
+        // #define rs p<<1|1
+        // #define k(p) tr[p].k
+        // #define b(p) tr[p].b
+        // #define l(p) tr[p].l
+        // #define r(p) tr[p].r
+    }tr[N<<2];
+    void build(ll p,ll l,ll r)
+    {
+        tr[p].l=l;tr[p].r=r;tr[p].fl=0;//还没有插入直线
+        if(l==r)
+        {
+            tr[p].k=tr[p].b=0.0;
+            return;
+        }
+        ll mid=l+r>>1;
+        build(p<<1,l,mid);build(p<<1|1,mid+1,r);
+    }
+    double cal(ll p,ll pos)
+    {
+        return tr[p].k*(double)(pos*1.0)+tr[p].b;
+    }
+    void upd(ll p,double k,double b)
+    {
+        tr[p].k=k;tr[p].b=b;
+    }
+    void change(ll p,ll l,ll r,double val_k,double val_b)
+    {
+        ll mid=tr[p].l+tr[p].r>>1;
+        if(tr[p].l>=l&&tr[p].r<=r)
+        {
+            if(tr[p].fl==0)
+            {
+                tr[p].fl=1;
+                upd(p,val_k,val_b);
+                return;
+            }
+            double x0=tr[p].l*1.0,x1=tr[p].r*1.0;
+            double y0p=cal(p,x0);double y1p=cal(p,x1);
+            double y0=val_k*x0+val_b;double y1=val_k*x1+val_b;
+            if(y0>=y0p&&y1>=y1p) upd(p,val_k,val_b);
+            else if(y0<=y0p&&y1<=y1p) return;
+            else
+            {
+                double mid=(tr[p].l*1.0+tr[p].r*1.0)/2.0;
+                double jiao=(val_b-tr[p].b)*1.0/(tr[p].k-val_k);
+                if(y0>y0p)
+                {
+                    if(jiao<=mid) change(p<<1,l,r,val_k,val_b);
+                    else change(p<<1|1,l,r,tr[p].k,tr[p].b),upd(p,val_k,val_b);
+                }
+                else
+                {
+                    if(jiao<=mid) change(p<<1,l,r,tr[p].k,tr[p].b),upd(p,val_k,val_b);
+                    else change(p<<1|1,l,r,val_k,val_b);
+                }
+            }
+
+            return;
+        }
+        if(l<=mid) change(p<<1,l,r,val_k,val_b);
+        if(r>mid) change(p<<1|1,l,r,val_k,val_b);
+    }
+    double query(ll p,ll pos)
+    {
+        if(tr[p].l==tr[p].r) return cal(p,pos);
+        double res=cal(p,pos);
+        ll mid=tr[p].l+tr[p].r>>1;
+        if(pos<=mid) res=max(res,query(p<<1,pos));
+        else res=max(res,query(p<<1|1,pos));
+        return res;
+    }
+}
+```
+
+
 
 ## 高维前缀和
 
