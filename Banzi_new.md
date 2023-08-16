@@ -472,7 +472,7 @@ int main()
 
 大意：树上每一个点有一个颜色a/b/c，统计树上有多少条路径满足其上三种颜色的数量一样多
 
-```
+```c++
 #include<bits/stdc++.h>
 using namespace std;
 #define ll int
@@ -645,6 +645,69 @@ int main()
 
 ---
 
+```c++
+//偷的板子
+struct Linear_basis{//默认不考虑空集 
+    long long d[65];//数组d表示序列 A的线性基  
+    int tot; 
+    bool flag;
+    void init(){
+        tot=flag=0;
+        for(int i=0;i<=60;i++)d[i]=0;
+    } 
+    void add(long long x){
+        for(int i=60;i>=0;i--){
+            if(x>>i&1){
+                if(d[i])x^=d[i];
+                else {
+                    d[i]=x;
+                    tot++;
+                    break;
+                }
+            }
+        }
+        return;
+    }
+//  long long get_mx(){
+//      long long ans=0;
+//      for(int i=60;i>=0;i--)
+//          if((ans^d[i])>ans)ans^=d[i];
+//      return ans;
+//  }
+//  long long get_mi(){
+//      if(tot<n)return 0;
+//      for(int i=0;i<=60;i++)if(d[i])return d[i];
+//      return -1;
+//  }
+//  void sort(){
+//      if(flag)return;
+//      for(int i=1;i<=60;i++){
+//          for(int j=i-1;j>=0;j--){
+//              if(d[i]>>j&1)d[i]^=d[j];
+//          }
+//      }
+//      flag=1;
+//      return;
+//  }
+//  long long get_K(long long K){
+//      //讨论能否得到0 
+//      if(K==1&&tot<n)return 0;
+//      if(tot<n)K--;
+//      sort();
+//      long long ans=0;
+//      for(int i=0;i<=60;i++){ 
+//          if(d[i]>0){
+//              if(K&1)ans^=d[i];
+//              K>>=1;
+//          }
+//      } 
+//      return ans;
+//  }
+}S;
+```
+
+
+
 ### 求数组任意异或的最大值
 
 ```
@@ -685,7 +748,7 @@ void solve()
 
 显然线性基中不同元素的异或结果一定不同，所以答案就是2^(线性基大小)
 
-```
+```c++
 ll n,m;
 string s;
 ll d[70];
@@ -742,7 +805,7 @@ void solve()
 
 tips：当线性基个数cnt小于 n 时，说明非满秩，所有结果中可以异或出 0，这样看来第 1 小得为 0 而非p[0],所以对k 减一。总的异或结果是不超过$2^{cnt}-1$的。
 
-```
+```c++
 //#pragma GCC optimize("O3")
 //#pragma GCC optimize("unroll-loops")
 #include<iostream>
@@ -810,15 +873,143 @@ int main()
 
 ```
 
-
-
 ### 利用线性基考虑异或出某一个数的方案数
 
-假设数组的大小为n，其线性基的大小为k，如过数字v能够被线性表出，则**异或出它的方案数就是$2^{n-k}$**，也就是线性基外的数字集合W的所有子集的数量。如果我们在W的子集中选择的是空集，线性基本身的元素自然可以构造出V，且方案数唯一。否则我们记选择的W的子集异或出来的结果为k，从高维往低位考虑，如果某一位需要翻转，只要异或上对应的元素即可。
+假设数组的大小为n，其线性基的大小为k，**如果数字v能够被线性表出**（这是前提），则**异或出它的方案数就是$2^{n-k}$**，也就是线性基外的数字集合W的所有子集的数量。如果我们在W的子集中选择的是空集，线性基本身的元素自然可以构造出V，且方案数唯一。否则我们记选择的W的子集异或出来的结果为k，从高维往低位考虑，如果某一位需要翻转，只要异或上对应的元素即可。
+
+### 求数组在$[1,R]$内异或出的最大值
+
+仿照求数组异或第k小中的思路，重新构造线性基，使p[i]的第 j 位在p[j]存在的情况下不为 1，这样异或p[j]一定使数值变大，抽象化为二进制便是取 p [ j ]相当于 j 位取 1。记最终答案为ans，初始为0。那么我们只要从高位往低位遍历，如果某一位的线性基$\leq R$,直接贪心让ans异或上这个结果，并将R也异或上这个结果即可，证明显然。
+
+### Tip
+
+有些时候数字的位数可能会很多（几百位），那么我们在求一些异或运算或者比较数字大小的过程中就只能按位遍历了，然后就可能会T。一个优化技巧是压位，将每64位用一个unsigned long long 存储，那么能优化的幅度还是很可观的。
+
+```c++
+struct ZeroOneLinearEquation {
+    vector<unsigned long long> f;
+    ZeroOneLinearEquation() {
+        //压位看这里
+        f = vector<unsigned long long>((EQ_SIZE + 63) / 64, 0);
+    }
+    void set(int x) {
+        f[x / 64] |= 1ULL << (x % 64);
+    }
+    void reset(int x) {
+        f[x / 64] &= ~(1ULL << (x % 64));
+    }
+    bool get(int x) const {
+        return f[x / 64] & (1ULL << (x % 64));
+    }
+    bool is_all_zeros() const {
+        for (int i = 0; i < (int)f.size(); ++ i) {
+            if (f[i]) {
+                return false;
+            }
+        }
+        return true;
+    }
+ 
+    int highest_bit() const {
+        for (int i = (int)f.size() - 1; i >= 0; -- i) {
+            if (f[i]) {
+                return i * 64 + __builtin_clzll(f[i]) ^ 63;
+            }
+        }
+        return -1;
+    }
+};
+ 
+ZeroOneLinearEquation operator^(const ZeroOneLinearEquation &a, const ZeroOneLinearEquation &b) {
+    ZeroOneLinearEquation c;
+    for (int i = 0; i < (int)a.f.size(); ++ i) {
+        c.f[i] = a.f[i] ^ b.f[i];
+    }
+    return c;
+}
+ 
+struct ZeroOneLinearEquationSystem {
+    vector<ZeroOneLinearEquation> equations;
+    vector<int> id_bit;
+    ZeroOneLinearEquationSystem() {
+        equations.clear();
+        id_bit.clear();
+    }
+ 
+    void add(const ZeroOneLinearEquation &equation) {
+        equations.push_back(equation);
+    }
+ 
+    void get_basis() {
+        int l = 0;
+        for (int i = EQ_SIZE - 1; i >= 0; -- i) {
+            int j = l;
+            while (j < (int)equations.size() && !equations[j].get(i)) {
+                ++ j;
+            }
+            if (j < (int)equations.size()) {
+                swap(equations[l], equations[j]);
+                for (int k = l + 1; k < (int)equations.size(); ++ k) {
+                    if (equations[k].get(i)) {
+                        equations[k] = equations[k] ^ equations[l];
+                    }
+                }
+                for (int k = 0; k < l; k ++) {
+                    if (equations[k].get(i)) {
+                        equations[k] = equations[k] ^ equations[l];
+                    }
+                }
+                id_bit.push_back(i);
+                ++ l;
+            }
+        }
+        equations.resize(l);
+    }
+ 
+    bool can_describe(ZeroOneLinearEquation equation) {
+        for (int i = 0; i < (int)equations.size(); ++ i) {
+            if (equation.get(id_bit[i])) {
+                equation = equation ^ equations[i];
+            }
+        }
+        return equation.is_all_zeros();
+    }
+};
+ 
+ZeroOneLinearEquation read_a_equation() {
+    ZeroOneLinearEquation equation;
+    static char s[1000];
+    scanf(" %s", s);
+    int n = strlen(s);
+    reverse(s, s + n);
+    for (int i = 0; i < n; ++ i) {
+        if (s[i] == '1') {
+            equation.set(i);
+        }
+    }
+    return equation;
+}
+ 
+ZeroOneLinearEquationSystem es;
+const int MOD = 1e9 + 7;
+ 
+long long pow2[301];
+ 
+bool operator>(const ZeroOneLinearEquation& a, const ZeroOneLinearEquation& b) {
+    for (int i = (int)a.f.size() - 1; i >= 0 ; -- i) {
+        if (a.f[i] > b.f[i]) {
+            return true;
+        } else if (a.f[i] < b.f[i]) {
+            return false;
+        }
+    }
+    return false;
+}
+```
 
 ## 点分树
 
-动态点分治。把点分治过程中的的前后遍历到的重心在一颗虚树上连接起来，前者作为后者的父亲，这样整个虚树的树高只有log(n)级别。虚树上两个点x,y的lca一定在原树中位于它们的简单路径上，因为在lca作为重心之后它们才会被分到两个连通块。
+动态点分治。把点分治过程中的的前后遍历到的重心在一颗虚树上连接起来，前者作为后者的父亲，这样整个虚树的树高只有log(n)级别。虚树上两个点x,y的lca一定在原树中位于它们的简单路径上，<font color='red'>因为在lca作为重心之后它们才会被分到两个连通块</font>。
 
 支持快速修改操作，但是这个操作修改的内容应该是与树的形态无关的（否则点分树统计的内容就没有意义了）
 
@@ -830,13 +1021,13 @@ int main()
 * 一般不需要把虚树的实际形态建出来，但如果能用到的话，注意不要和原树搞混。
 * 树状数组大小要设置得当。设 $now=|subtree(i)|$，由于 $i$ 在$ subtree(i)$中为重心，所以$ f1(i,j)$中 $j$的值域为 $0-now/2$，f2(i,j)中 j的值域为 $1-now$。由于下标可以为$ 0$，在树状数组内部还需要统一向后移一位。也就是说 $f1,f2 $的大小要分别设置为 $now/2+1 $和 $now+1 $。
 * 如果预处理了每个点在虚树上的祖先，修改 / 查询 中跳父亲时需要倒序枚举（具体见代码）。
-* 关于卡常：点分树做题经常会用到 vector,vector, set,set, multiset,multiset, priority queuepriority queue 之类的东西，如果您嫌弃它们太慢且不愿开 O2O2，自备几个能代替 STLSTL 的模板吧...
+* 关于卡常：点分树做题经常会用到 vector, set,multiset, priority queue之类的东西，如果您嫌弃它们太慢且不愿开 O2,自备几个能代替 STL的模板吧...
 
 模板题：维护一颗带点权树，需要支持两种操作：修改 x 的点权，查询与点 x距离不超过 K的点的权值之和。
 
-对于每一个点i统计在虚树中其子树内到其距离$\leq d$的点权之和，记为$f_1(i,d)$,在虚树上递归往上查看其父亲u的时候，我们记u与i在原树中的距离为$dis$,多余的贡献是在u子树内但是不在i子树内的点的贡献，也就是在u子树内但是不在x子树内且与x距离$\leq d-dis$的点权之和,也就是u子树内距离u$\leq d-dis$的点权之和减去x子树内距离u$\leq d-dis$的点权之和。所以再记录$f_2(i,d)$,表示距离x在虚树上的父亲u$\leq d$的点权之和，然后容斥计算即可。
+<font color='orange'>对于每一个点i统计在虚树中其子树内到其距离$\leq d$的点权之和，记为$f_1(i,d)$</font>在虚树上递归往上查看其父亲u的时候，我们记u与i在原树中的距离为$dis$,多余的贡献是在u子树内但是不在i子树内的点的贡献，也就是在u子树内但是不在x子树内且与x距离$\leq d-dis$的点权之和,也就是u子树内距离u$\leq d-dis$的点权之和减去x子树内距离u$\leq d-dis$的点权之和。所以再记录<font color='orange'>$f_2(i,d)$,表示距离x在虚树上的父亲u$\leq d$的点权之和</font>，然后容斥计算即可。
 
-```
+```c++
 #include<bits/stdc++.h>
 using namespace std;
 #define ll int
@@ -1048,7 +1239,7 @@ $O(nlon)$统计某一点最大/最小值线段对应的值
 
 该模板为统计最大值
 
-```
+```c++
 namespace LcTree
 {
     struct ty
@@ -1143,7 +1334,7 @@ namespace LcTree
 
 $\forall i,0\leq i\leq 2^n-1，,求\large \sum_{j\subset i} a_{j}$
 
-```
+```c++
 for(int j=0;j<n;++j)
 {
     for(int i=0;i<(1<<n);++i)
@@ -1173,7 +1364,7 @@ for(int j=0;j<n;++j)
 
 code
 
-```
+```c++
 ll n;
 ll mas[N],sec[N],dp[N];
 void upt(ll id,ll val)
@@ -1802,9 +1993,47 @@ void solve()
 }
 ```
 
-## 拓展欧几里得
+## 费马-欧拉定理
 
-```
+n,a为整数，若满足n，a互质，则：$a^{\phi(n)}\equiv1(mod n)$
+
+Proof ：1~n中与n互质的数字有$\phi(n)$个,记为$x_1,x_2...x_{\phi{n}}$，考虑$m_i=a*x_i$
+
+​		不难得到以下结论：
+
+   * 任意$m_i$之间两两互质
+
+   * $gcd(mi,n)=1$
+
+     所以$m_i$与$x_i$之间存在一一对应的同余关系
+
+     所以：$a^{\phi(n)}*x_1*x_2*...*x_{\phi(n)}\equiv x_1*x_2*...x_{\phi(n)}(mod n)$
+
+     化简得到上述定理 
+
+     $Q.E.D.$
+
+推广：
+
+* $a*a^{\phi(n)-1}\equiv1(mod n)$
+
+​				**所以若a与n互质，则a关于n的乘法逆元就是$a^{\phi(n)-1}$**
+
+* 特别的，当n为质数时，我们就得到了费马小定理：a,n互质且n为质数时，$a^{n-1}\equiv 1(mod n)$
+
+### 拓展欧拉定理
+
+$b\leq \phi(m)$的时候,$\large a^{b}\equiv a^{(b mod \phi(m))+\phi(m)}\pmod m$,这里无需a，m互质
+
+### 欧拉定理推论
+
+$\large a^{b}\equiv a^{(b mod \phi(m))}\pmod m$,这里要求a,m互质，这也是与前者的区别
+
+<font color='orange'>上述两个结论常用于降幂</font>
+
+## 拓展欧几里得(解方程&求Gcd)
+
+```c++
 int Exgcd(int a,int b,int &x,int &y){
     if(!b){
         x=1,y=0;
@@ -1815,7 +2044,7 @@ int Exgcd(int a,int b,int &x,int &y){
 }
 ```
 
-```
+```c++
 ll exgcd(ll a,ll b,ll &x,ll &y){
 	if(!b){
 		x=1;
@@ -1828,9 +2057,78 @@ ll exgcd(ll a,ll b,ll &x,ll &y){
 }
 ```
 
+方程$ax+by=c$的某个解$(x_0,y_0)$，则方程的通解为$(x_0+kb',y_0-ka')$,其中$b'=\frac{b}{(a,b)},a'=\frac{a}{(a,b)}$
+
+```c++
+ll gt(ll a,ll b,ll c)
+{
+    //求解满足方程组ax+by=c的最小非负数解x(若要正整数解在最后特判x=0即可)
+    //无解返回-1
+    ll x,y;
+    ll Gcd=exgcd(a,b,x,y);
+    if(c%Gcd) return -1;
+    x=x*(c/Gcd);
+    ll mo=b/Gcd;
+    x=(x%mo+mo)%mo;
+    return x;
+    //x为特解，通解为(x+kb',y-ka'),b'=b/(a,b),a'=a/(a,b)
+}
+```
+
+## 离散对数问题
+
+### BSGS
+
+求解方程$a^x \equiv b\pmod p$,其中p为质数
+
+设$x=im-j$,其中$m=ceil(sqrt(p*1.0)),j\in [0,m),i\in [1,m]$,于是原方程变成了$a^{im-j}\equiv b \pmod p$，也就是$a^{im}\equiv a^jb \pmod p$
+
+于是我们可以枚举j，并将$a^jbmod p$的答案记录在map中。map中的key存的是答案，value存的是j。
+
+然后我们再枚举i，在map中查找$a^{im} modp$,如果查询到了，那么查询到的即为$j$，那么$x=im-j$即为答案。
+
+这样做限定了x在$[0,p]$的范围内。但是因为$\large a^{x}\equiv a^{xmod(p-1)} \pmod p$,通解就是$x+k(p-1)$，所以只要在$[0,p]$内求出解即可，求不出来就代表无解
+
+```c++
+ll bsgs(ll a, ll b, ll p)
+{
+    //返回值为[0,p]的特解x，通解为x+k(p-1),即a^{x} = a^{x%(p-1)} (mod p)
+    map<ll,ll> mp;
+    //a^x = b (mod p)
+    a %= p, b %= p;
+    if(!a && !b) return 1;
+    if(!a || !b) return -1;
+    mp.clear();
+    ll m = ceil(sqrt(p*1.0)), tmp = 1;//上取整
+    mp[b] = 0;//(a^0)*b=b
+    for(int j = 1; j <= m; j++)
+    {
+        tmp = tmp*a % p;
+        if(!mp[tmp*b%p]) mp[tmp*b%p] = j;
+    }
+    ll t = 1, ans;
+    for(int i = 1; i <= m; i++)
+    {
+        t = t*tmp%p;
+        if(mp[t])
+        {
+            ans = i*m-mp[t];
+            return (ans%p+p)%p;
+        }
+    }
+    return -1;
+}
+```
+
+时间复杂度$O(sqrt(p))$
+
+### pohlig-hellman
+
+
+
 ## 线性求逆元：
 
-前面的求逆元的复杂度还是太高了，这里有一个线性时间复杂度的做法，可以求出1~n关于p的逆元。显然此时p与1~n的所有数都是互质关系
+这里有一个线性时间复杂度的做法，可以求出1~n关于p的逆元。显然此时p与1~n的所有数都是互质关系
 
 显然1的逆元为1.
 
@@ -1848,7 +2146,7 @@ ll exgcd(ll a,ll b,ll &x,ll &y){
 
 code：
 
-```
+```c++
 inv[1]=1;
 for(int i=2;i<p;++i)
 {
@@ -1900,7 +2198,7 @@ $x\equiv a_k(mod m_k)$
 
 在模M的意义下，方程组有唯一解：$a=(\sum_{i-1}^{k}a_it_iM_i)mod M$
 
-```
+```c++
 #include<bits/stdc++.h>
 using namespace std;
 #define ll long long
@@ -2030,6 +2328,8 @@ int main()
 
 ---
 
+
+
 ## Lucas定理
 
 ![image-20230409200204176](C:\Users\26463\AppData\Roaming\Typora\typora-user-images\image-20230409200204176.png)
@@ -2105,21 +2405,135 @@ $f_i=\sum_{x=i}^{n}(-1)^{x-i}C(x,i)g_x$
 
 
 
+## 势函数和鞅的停时定理 
+
+### 前置芝士
+
+鞅：
+
+鞅是一类特殊的随机过程，假设我们从一开始就在观察一场赌博游戏，现在已经得到了前t秒的观测值，那么当第t+1 秒观测值的期望等于第t秒的观测值时，我们称这是一个公平赌博游戏。
+
+具体来说，对于一个随机过程${A_1,A_2,...}$,如果$E(A_{n+1}|A_0,A_2,..A_n)=A_n$,我们称该随机过程为鞅。
+
+鞅的停时定理：
+
+设时停时间（在**不知道随机过程的中间状态下**停止的时刻）为t，则$E(t)=E(0)$
+
+这个E到底是什么，由具体的情境而定，但是只要一个随机过程是一个鞅，它就有该结论
+
+### 势函数
+
+接下来我们考虑一个很常见的问题：
+
+对于一个随机过程${A_1,A_2,...}$,如果**其终止状态$A_t$是确定的**，求$E[t]$,即时停时刻的期望（**注意这里我们不要求该随机过程是一个鞅**）
+
+为此，我们引入一个势函数$\phi(X)$
+
+并且$\phi(x)$满足如下性质：
+
+* $\forall n<t, E(\phi(A_{n+1})-\phi(A_n)|A_0,A_1,...A_n)=-1$,即势能不断降低
+* $E(\phi(A_t))=C$,是一个常值
+
+那么如果我们令$X_t=\phi(A_t)+t$,则$E(X_{n+1}-X_n|x_0,x_1...x_n)=E(\phi(A_{n+1})-\phi(A_n)+1|x_0,x_1...x_n)=E(\phi(A_{n+1})-\phi(A_n)|x_0,x_1...x_n)+1=0$
+
+我们发现随机过程$X_t$就是一个鞅了
+
+那么由鞅的停时原理，$E(X_t)=E(X_0)$,即$E(\phi(A_t)+t)=E(\phi(A_0)+0)$,也即$E(\phi(A_t))+E(t)=E(\phi(A_0))$
+
+所以我们得到**$E(t)=E(\phi(A_0))-E(\phi(A_t))$**,根据我们之前定义的性质，$E(\phi)A_t$为一个常值，而$E(\phi(A_0))$显然也是一个常值，所以只要能找到这个满足条件的势函数，就能很方便的求出$E(t)$
+
+这里我们只是在随机过程$X_t$中应用了停时定理，对原本的随机过程$A_t$并没有做什么限制
+
+接下来结合具体的题目来讨论一下如何构造这样的一个势函数
+
+[CF1349D](https://codeforces.com/contest/1349/problem/D)
+
+大意：
+
+有n个人在玩传球游戏，一开始第$i$个人有$a_i$个球。每一次传球，等概率随机**选中一个球**，设其当前拥有者为$i$，$i$将这个球等概率随机传给另一个人$j(j\neq i)$。当某一个人拥有所有球时，停止游戏。问游戏停止时的期望传球次数。
+
+记球的总数为m
+
+不妨记状态$A_t=(a_{t,1},a_{t,2}...a_{t,n})$,一个n维向量，分别表示 在时刻t，第i个人手中球的数量，显然它唯一地表示了某一个时刻的全局状态
+
+也就是说，我们现在就把这个游戏过程抽象成了一个随机过程$A_0,A_1....$,并且其停时为t。那么按照之前所说，我们需要去定义一个势函数$\phi(A_t)$,为了计算方便，我们可以将$\phi$具体到A的每一维向量，不妨记为$\phi(A_t)=\sum_{i=1}^{n}f(a_{t,i})$,这里f是什么我们并不知道，但是如果我们知道了f，其实也就是相当于构造出了这个势能函数
+
+这里再把我们定义的$\phi$的性质再放一下
+
+---
+
+$\phi(x)$满足如下性质：
+
+* $\forall n<t, E(\phi(A_{n+1})-\phi(A_n)|A_0,A_1,...A_n)=-1$,即势能不断降低
+* $E(\phi(A_t))=C$,是一个常值
+
+---
+
+那么我们首先来考虑第一个性质，为了方便，不妨先考虑$E(\phi(A_{n+1})|A_0,A_1,...A_n)$
+
+发现传球过程就是一个$Markov$过程，并且该时刻的状态只与上一个时刻的状态有关,所以$E(\phi(A_{n+1})|A_0,A_1,...A_n)=E(\phi(A_{n+1})|A_n)$
+
+考虑一次转移的所有可能
+
+i传球给j的概率是$\Large \frac{a_{t,i}}{m}\frac{1}{n-1}$
+
+$\large E(\phi(A_{n+1})|A_n)=\sum_{i=1}^{n}\sum_{j\neq i}\frac{a_{t,i}}{m}\frac{1}{n-1}[f(a_{t,i}-1)+f(a_{t,j}+1)+\sum_{k\notin(i,j)}f(a_{t,k})]$
+
+$\large =\sum_{i=1}^{n}\frac{a_{t,i}}{m}f(a_{t,i}-1)+\frac{m-a_{t,i}}{m(n-1)}f(a_{t,i}+1)+\frac{(m-a_{t,i})(n-2)}{m(n-1)}f(a_{t,i})$
+
+根据我们定义的性质$E(\phi(A_{n+1})-\phi(A_n)|A_0,A_1,...A_n)=-1$
+
+$E(\phi(A_{n+1})-\phi(A_n)|A_0,A_1,...A_n)=E(\phi(A_{n+1})-\phi(A_n)|A_n)$
+
+$\large =(\sum_{i=1}^{n}\frac{a_{t,i}}{m}f(a_{t,i}-1)+\frac{m-a_{t,i}}{m(n-1)}f(a_{t,i}+1)+\frac{(m-a_{t,i})(n-2)}{m(n-1)}f(a_{t,i}))-\sum f(a_{t,i})=-1$
+
+所以$\large \sum f(a_{t,i})=(\sum_{i=1}^{n}\frac{a_{t,i}}{m}f(a_{t,i}-1)+\frac{m-a_{t,i}}{m(n-1)}f(a_{t,i}+1)+\frac{(m-a_{t,i})(n-2)}{m(n-1)}f(a_{t,i}))+1$
+
+那么我们可以把末尾的1分配到每一个和式里面去，这样左右的形式就统一了
+
+所以$\large \sum f(a_{t,i})=\sum_{i=1}^{n}[\frac{a_{t,i}}{m}f(a_{t,i}-1)+\frac{m-a_{t,i}}{m(n-1)}f(a_{t,i}+1)+\frac{(m-a_{t,i})(n-2)}{m(n-1)}f(a_{t,i})+\frac{a_{t,i}}{n}]$
+
+那么不妨记$\large f(a)=\frac{a}{m}f(a-1)+\frac{m-a}{m(n-1)}f(a+1)+\frac{(m-a)(n-2)}{m(n-1)}f(a)+\frac{a}{n}$
+
+这样和式还是成立的，我们也成功抽象出了f函数
+
+再转化一下，$\large f(a+1)=\frac{m+an-2a}{m-a}f(a)-\frac{a(n-1)}{m-a}(f(a-1)+1)$
+
+代入边界条件$a=0$时，有$f(1)=f(0)$,所以我们可以设
+
+这样就得到了f，也就是相当于得到了势函数$\phi(x_t)=\sum_{i}f(x_{t,i})$
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 ## 竞赛图
 
 竞赛图(tournament)：有 $n^2$条边的有向图
 
 
 
-性质：
+### 性质：
 
 - 竞赛图强连通缩点后的 DAG 是一条链
 - 竞赛图的强连通块存在一条哈密顿回路
 - 竞赛图存在一条哈密顿路径
 - 竞赛图 $size>1$的强连通块中，大小为 $[3,size]$简单环均存在
-- 兰道定理（竞赛图判定定理）：定义一个竞赛图的比分序列是把竞赛图每个点的出度从小到大排列得到的序列。一个长度为 n的序列 s1≤s2≤s3≤…≤sn 是合法比分序列当且仅当 ∀i∈[1,n],$\sum_{j=1}^{i}s_j>=C(i,2)$，且在 i=n时取等号，[证明](https://blog.csdn.net/a_crazy_czy/article/details/73611366) 非常巧妙！
+- 兰道定理（竞赛图判定定理）：定义一个竞赛图的比分序列是把竞赛图每个点的出度从小到大排列得到的序列。一个长 度为 n的序列 s1≤s2≤s3≤…≤sn 是合法比分序列当且仅当 ∀i∈[1,n],$\sum_{j=1}^{i}s_j>=C(i,2)$，且在 i=n时取等号，[证明](https://blog.csdn.net/a_crazy_czy/article/details/73611366) 非常巧妙！
 
-计数：
+### 计数：
 
 - n阶竞赛图个数显然就是$h_n=2^{C(n,2)}$啦
 
