@@ -629,6 +629,290 @@ int main()
 
 ```
 
+## 树链剖分
+
+### 注意事项
+
+易写错：
+
+* dfs2（y,y）//开新的链
+  
+* 确定rt=1，勿忘记给rt赋值
+  
+* 树上路径查找/修改时，第一句话：while（top[x]!=top[y]）,而不是while（dep[top[x]]!=dep[top[y]]）
+* 含有区间覆盖操作时，线段树add需要初始化为-1，要一开始在定义时就把-1赋上去
+
+### 基本板子
+
+```c++
+ll dep[N];//节点深度
+ll fa[N];//节点父亲
+ll son[N];//节点重儿子
+ll siz[N];//节点子树的大小
+ll mas[N],a[N];//初始序列   处理后的序列
+ll cnt=0;//dfs序的计数器
+ll idx[N];//节点的dfs序 id 
+ll top[N];//节点所在链的顶端 要在init_dfs处理之后才能更新这个 
+
+void init_dfs(ll id,ll p,ll depth)//节点 父亲 深度 
+{//更新重儿子以及各节点的子树大小&深度 
+	dep[id]=depth;
+	fa[id]=p;
+	siz[id]=1;
+	ll son_val=0;//重儿子的子树大小
+	for(int i=head[id];i!=-1;i=edge[i].next)
+	{
+		ll y=edge[i].t;
+		if(y==p) continue;
+		init_dfs(y,id,depth+1);
+		siz[id]+=siz[y];//子树大小更新 
+		if(siz[y]>son_val)
+		{
+			son_val=siz[y];
+			son[id]=y;
+		}
+    } 
+} 
+
+void dfs2(ll id,ll p)
+{
+	idx[id]=++cnt;
+	a[cnt]=mas[id];//序列转移
+	top[id]=p;
+	if(!son[id]) return;//无重儿子的情况(也就是无儿子，是叶子节点)直接返回
+	//下面的dfs顺序：先遍历重儿子，再遍历轻儿子 
+	dfs2(son[id],p);//顶端idx不变
+	for(int i=head[id];i!=-1;i=edge[i].next)
+	{
+		ll y=edge[i].t;
+		if(!idx[y]) dfs2(y,y);//新的链(轻链) 
+	} 
+}
+
+void push_up(ll p)
+{
+	tr[p].val=(tr[p<<1].val+tr[p<<1|1].val);
+}
+
+void build(ll p,ll l,ll r)
+{
+	tr[p].l=l;tr[p].r=r;tr[p].siz=r-l+1;
+	if(l==r)
+	{
+		tr[p].val=a[l];//用新的序列值 
+		return;
+	}
+	ll mid=l+r>>1;
+	build(p<<1,l,mid);
+	build(p<<1|1,mid+1,r);
+	push_up(p);
+}
+
+void push_down(ll p)
+{
+	if(tr[p].add==0) return;
+	tr[p<<1].val=(tr[p<<1].val+tr[p<<1].siz*tr[p].add);
+	tr[p<<1|1].val=(tr[p<<1|1].val+tr[p<<1|1].siz*tr[p].add);
+	tr[p<<1].add=(tr[p<<1].add+tr[p].add);
+	tr[p<<1|1].add=(tr[p<<1|1].add+tr[p].add);
+	tr[p].add=0;//下传结束 
+}
+
+void add(ll p,ll l,ll r,ll val)
+{
+	if(tr[p].l>=l&&tr[p].r<=r)
+	{
+		tr[p].val=(tr[p].val+tr[p].siz*val);
+		tr[p].add=(tr[p].add+val);
+		return;
+	}
+	push_down(p);
+	ll mid=tr[p].l+tr[p].r>>1;
+	if(l<=mid) add(p<<1,l,r,val);
+	if(r>=mid+1) add(p<<1|1,l,r,val);
+	push_up(p);
+}
+
+ll sum(ll p,ll l,ll r)
+{
+	ll ans=0;
+	if(tr[p].l>=l&&tr[p].r<=r) return tr[p].val;
+	push_down(p);
+	ll mid=tr[p].l+tr[p].r>>1;
+	if(l<=mid) ans=(ans+sum(p<<1,l,r));
+	if(r>=mid+1) ans=(ans+sum(p<<1|1,l,r));
+	return ans;
+}
+
+ll tree_sum(ll x,ll y)//树上路径和 
+{
+	ll ans=0;
+	while(top[x]!=top[y])
+	{
+		if(dep[top[x]]<dep[top[y]]) swap(x,y);
+		ans=(ans+sum(1,idx[top[x]],idx[x]));
+		x=fa[top[x]];
+	}
+	if(dep[x]>dep[y]) swap(x,y);
+	//来到同一重链 
+	ans=(ans+sum(1,idx[x],idx[y]));
+	return ans;
+}
+
+void tree_add(ll x,ll y,ll val)
+{
+	
+	while(top[x]!=top[y])
+	{
+		if(dep[top[x]]<dep[top[y]]) swap(x,y);
+		add(1,idx[top[x]],idx[x],val);
+		x=fa[top[x]];
+	}
+	if(dep[x]>dep[y]) swap(x,y);
+	//来到同一重链
+	add(1,idx[x],idx[y],val); 
+}
+
+ll get_lca(ll x,ll y)//获取两节点的lca 
+{
+	while(top[x]!=top[y])
+	{
+		if(dep[top[x]]<dep[top[y]]) swap(x,y);
+		x=fa[top[x]];
+	}
+	return dep[x]>dep[y]?y:x;
+}
+
+ll find_firson(ll x,ll y)//找到x到y路径上的第一个儿子
+{
+    while(top[x]!=top[y])
+	{
+		if(dep[top[x]]<dep[top[y]]) swap(x,y);
+		if(fa[top[x]]==y) return top[x];
+		x=fa[top[x]];
+	}	
+	if(dep[x]<dep[y]) swap(x,y);
+	return son[y];
+} 
+
+void trson_add(ll x,ll val)//以x为根的子树所有权值+=val 
+{
+	if(x==rt)
+	{
+		add(1,1,n,val);
+		return;
+	}
+	//////
+	ll LCA=get_lca(x,rt);
+	if(LCA!=x) 
+	{
+		add(1,idx[x],idx[x]+siz[x]-1,val);
+		return;
+	}
+	//////
+	ll child=find_firson(x,rt);
+	add(1,1,n,val);
+	add(1,idx[child],idx[child]+siz[child]-1,-val);
+	
+}
+```
+
+
+
+### 边权下放点权
+
+1.dfs时更新点权，也就是让边权赋给子节点
+
+```c++
+for(int i=head[id];i!=-1;i=edge[i].next)
+	{
+		ll y=edge[i].t;
+		if(y==p) continue;
+		a[y]=edge[i].l; //如果初始边权不为0，点权下放边权时要执行这一句操作 
+		init_dfs(y,id,depth+1);
+		siz[id]+=siz[y];
+		if(siz[y]>son_val)
+		{
+			son_val=siz[y];
+			son[id]=y;
+		}
+	}	
+```
+
+2.树上路径更新的时候，你稍微手玩一下就会发现两个节点的lca是不应该被更新的，所以在最后一步更新的时候，我们的代码要有所改变
+
+```c++
+
+ll tree_add(ll x,ll y,ll val)
+{
+	while(top[x]!=top[y])
+	{
+		if(dep[top[x]]<dep[top[y]]) swap(x,y);
+		add(1,idx[top[x]],idx[x],val); 
+		x=fa[top[x]];
+	}
+	if(dep[x]>dep[y]) swap(x,y);
+	add(1,idx[x]+1,idx[y],val);//lca不查询，所以x要+1
+}
+```
+
+当然你也可以这么写
+
+```c++
+
+ll tree_add(ll x,ll y,ll val)
+{
+	while(top[x]!=top[y])
+	{
+		if(dep[top[x]]<dep[top[y]]) swap(x,y);
+		add(1,idx[top[x]],idx[x],val); 
+		x=fa[top[x]];
+	}
+	if(dep[x]>dep[y]) swap(x,y);
+	add(1,idx[x],idx[y],val);
+    add(1,idx[x],idx[x],-val);
+}
+#其实就是把lca的更新的结果给改回去
+```
+
+3.查询树上路径权值和时（如果有这个操作），同理两点的lca的点权不应该被算进去，因为它对应的边不属于这两点的路径上。
+
+```c++
+
+ll tree_sum(ll x,ll y)
+{
+	ll ans=0;
+	while(top[x]!=top[y])
+	{
+		if(dep[top[x]]<dep[top[y]]) swap(x,y);
+		ans+=sum(1,idx[top[x]],idx[x]);
+		x=fa[top[x]];
+	}
+	if(dep[x]>dep[y]) swap(x,y);
+	ans+=sum(1,idx[x]+1,idx[y]);//点权下放边权操作核心代码，lca不查询，所以x要+1 
+	return ans;
+}
+```
+
+同理，你也可以这么写,意思我就不解释了
+
+```c++
+ll tree_sum(ll x,ll y)
+{
+	ll ans=0;
+	while(top[x]!=top[y])
+	{
+		if(dep[top[x]]<dep[top[y]]) swap(x,y);
+		ans+=sum(1,idx[top[x]],idx[x]);
+		x=fa[top[x]];
+	}
+	if(dep[x]>dep[y]) swap(x,y);
+	ans+=sum(1,idx[x],idx[y]);
+    ans-=sum(1,idx[x],idx[x]);
+	return ans;
+}
+```
+
 
 
 ## 线性基
@@ -642,6 +926,8 @@ int main()
 3.线性基元素的异或集合等于原数组元素的异或集合
 
 4.线性基中每一个元素的最高位的1必定不被更低位置的元素包含
+
+5.线性基是能够满足条件1的**最小**集合
 
 ---
 
@@ -1904,95 +2190,6 @@ int main()
 }
 ```
 
-## FFT
-
-```
-#include<bits/stdc++.h>
-using namespace std;
-#define ll long long
-#define IL inline
-#define ull unsigned long long
-#define clr(f,n) memset(f,0,sizeof(int)*(n))
-#define cpy(f,g,n) memcpy(f,g,sizeof(int)*(n))
-const int _G=3,mod=998244353,Maxn=1050000;
-namespace FastIOT{
-	const int bsz=1<<18;
-	char bf[bsz],*hed,*tail;
-	inline char gc(){if(hed==tail)tail=(hed=bf)+fread(bf,1,bsz,stdin);if(hed==tail)return 0;return *hed++;}
-	template<typename T>IL void read(T &x){T f=1;x=0;char c=gc();for(;c>'9'||c<'0';c=gc())if(c=='-')f=-1;
-	for(;c<='9'&&c>='0';c=gc())x=(x<<3)+(x<<1)+(c^48);x*=f;}
-	template<typename T>IL void print(T x){if(x<0)putchar(45),x=-x;if(x>9)print(x/10);putchar(x%10+48);}
-	template<typename T>IL void println(T x){print(x);putchar('\n');}
-}
-using namespace FastIOT;
-int F[Maxn<<1],G[Maxn<<1],n,m;
-ll powM(ll a,ll t=mod-2)
-{
-    ll ans=1;
-    while(t)
-    {
-    	if(t&1)ans=ans*a%mod;
-    	a=a*a%mod;t>>=1;
-    }
-	return ans;
-}
-const int invG=powM(_G);
-int tr[Maxn<<1],tf;
-void tpre(int n)
-{
-  	if (tf==n)return ;tf=n;
-  	for(int i=0;i<n;i++)
-    tr[i]=(tr[i>>1]>>1)|((i&1)?n>>1:0);
-}
-void NTT(int *g,bool op,int n)
-{
-    tpre(n);
-    static ull f[Maxn<<1],w[Maxn<<1]={1};
-    for (int i=0;i<n;i++)f[i]=(((ll)mod<<5)+g[tr[i]])%mod;
-    for(int l=1;l<n;l<<=1)
-    {
-    	ull tG=powM(op?_G:invG,(mod-1)/(l+l));
-    	for (int i=1;i<l;i++)w[i]=w[i-1]*tG%mod;
-    	for(int k=0;k<n;k+=l+l)
-        for(int p=0;p<l;p++)
-	    {
-	        int tt=w[p]*f[k|l|p]%mod;
-	        f[k|l|p]=f[k|p]+mod-tt;
-	        f[k|p]+=tt;
-        }      
-    	if (l==(1<<10)) for (int i=0;i<n;i++)f[i]%=mod;
-    }
-    if (!op)
-    {
-    	ull invn=powM(n);
-    	for(int i=0;i<n;++i)
-        g[i]=f[i]%mod*invn%mod;
-    }
-    else for(int i=0;i<n;++i)g[i]=f[i]%mod;
-}
-void px(int *f,int *g,int n)
-{for(int i=0;i<n;++i)f[i]=1ll*f[i]*g[i]%mod;}
-void times(int *f,int *g,int len,int lim)
-{
-    static int sav[Maxn<<1];
-    int n=1;for(n;n<len+len;n<<=1);
-    clr(sav,n);cpy(sav,g,n);
-    NTT(f,1,n);NTT(sav,1,n);
-    px(f,sav,n);NTT(f,0,n);
-    clr(f+lim,n-lim);clr(sav,n);
-}
-void solve()
-{
-	read(n);read(m); 
-	n++;m++;
-	for(int i=0;i<n;++i) read(F[i]);
-	for(int i=0;i<m;++i) read(G[i]);
-	times(F,G,max(n,m),n+m+1);
-	for(int i=0;i<n+m-1;++i) printf("%d ",F[i]);
-	
-}
-```
-
 ## 费马-欧拉定理
 
 n,a为整数，若满足n，a互质，则：$a^{\phi(n)}\equiv1(mod n)$
@@ -2332,8 +2529,6 @@ int main()
 
 ## Lucas定理
 
-![image-20230409200204176](C:\Users\26463\AppData\Roaming\Typora\typora-user-images\image-20230409200204176.png)
-
 ```
 ll work(ll n, ll m) {//Lucas 定理
 	if (!n) return 1;
@@ -2341,13 +2536,15 @@ ll work(ll n, ll m) {//Lucas 定理
 }
 ```
 
----
 
-## 范德蒙德卷积
+
+## 组合数学小常识
+
+### 范德蒙德卷积
 
 $\sum_{i=0}^{k}\binom{n}{i}\binom{m}{k-i}=\binom{n+m}{k}$
 
-#### 推论
+####  推论
 
 $\sum_{i=0}^{n}\binom{n}{i}\binom{n}{i-1}=\binom{2n}{n+1}$
 
@@ -2355,29 +2552,97 @@ $\sum_{i=0}^{n}\binom{n}{i}^2=\binom{2n}{n}$
 
 $\sum_{i=0}^{m}\binom{n}{i}\binom{m}{i}=\binom{n+m}{m}$
 
----
+### 小球盒子
 
+小球数字为n，盒子数为m
 
+* 不同小球，不同盒子
 
-## 斯特林数
+  有空盒：$m^n$
 
-### 第一类斯特林数
+  无空盒：$m!S(n,m)$ 第二类斯特林数乘上对应排列
 
-### 第二类斯特林数
+* 不同小球，相同盒子
+
+  有空盒：$\sum_{k=1}^{min(n,m)}S(n,k)$
+
+  无空盒：$S(n,m)$
+
+* 相同小球，不同盒子
+
+  有空盒:$\frac{n+m-1}{n}$
+
+  无空盒:$\frac{n-1}{m-1}$
+
+* 相同小球，相同盒子：
+
+  有空盒：$\large \sum_{i=1}^{m}P_i(n)=\frac{1}{\prod_{i=1}^{m}(1-x^i)}[x^n]$
+
+  无空盒：$\large p_m(n)=\frac{1}{\prod_{i=1}^{m}(1-x^i)}[x^{n-m}]$
+
+###  二项式定理及拓展
+
+$(a+b)^{n}=\sum_{i=0}^{n}C(n,i)a^{n-i}b{i}$
+
+$(a+b)^{\alpha}=\sum_{i=0}^{\inf} C(\alpha,i)a^{\alpha-i}b^{i}$
+
+$(a+b)^{-\alpha}=\sum_{i=0}^{inf}(-1)^iC(\alpha+i-1,i)a^{\alpha-i}b^{i}$
+
+### 小公式
+
+$\sum_{i=0}^{n}iC(n,i)=n2^{n-1}$
+
+$\sum_{i=0}^{n}C(x+i,x)=C(n+x+1,n)$
+
+### 斐波那契
+
+$gcd(F_i,F_j)=F_{gcd(i,j)}$
+
+$\sum_{i=0}^{n}F_i=F_{n+2}-1$
+
+$\sum_{i=0}^{n}F_{i}^2=F_nF_{n+1}$
+
+$\sum_{i=0}^{n}F_{2i-1}=F_{2n}$
+
+$F_n=F_mF_{n-m+1}+F_{m-1}F_{n-m},n>=m$
+
+$F_n^2+(-1)^n=F_{n-1}F_{n+1}$
+
+$F_{2n}=C(2n,0)+C(2n-1,1)+...+C(n,n),F_{2n+1}=C(2n+1,0)+..+C(n+1,n)$
+
+### 卡特兰数
+
+凸多边形三角划分,n个结点的二叉树不同构的个数,一个栈的进栈序列为1，2，3，…，n，不同的出栈序列个数,长度为2n的合法括号序列个数,n层阶梯图切割成n个矩形的方案数,n*n的网格图，不经过对角线从左下角到右下角的方案数
+
+1,1,2,5,14,42,132...
+
+$C_n=\sum_{i=0}^{n-1}C_iC_{n-i-1},n>=2;C_0=C_1=1$
+
+$C_n=C(2n,n)-C(2n,n-1)$
+
+### 斯特林数
+
+#### 第一类斯特林数
+
+n个不同元素构成k个圆排列的方案数
+
+$S_1(n,k)=S_1(n-1,k-1)+(n-1)S_1(n-1,k)$
+
+边界条件 $S_1(n,k)=0(n<k||(n>0,k=0)),S_1(n,k)=1(n=k)$
+
+#### 第二类斯特林数
 
 组合意义：有n个互不相同的球，放到k个互不区分的盒子里面，每一个盒子里至少一个球，球方案数
 
-递推式$S_2(n,k)=S_2(n-1,k-1)+kS_2(n-1,k)$
+递推式$S_2(n,k)=S_2(n-1,k-1)+kS_2(n-1,k)=\frac{\sum_{i=0}^{k}(-1)^iC(k,i)(k-i)^n}{k!}$
+
+边界条件 $S_2(n,k)=0(n<k||(n>0,k=0)),S_2(n,k)=1(n=k)$
 
 通项 $S_2(n,k)=\frac{1}{k!}\sum_{i=0}^{k}(-1)^i\binom{k}{i}(k-i)^n$
 
 重要性质：$n^x=\sum_{k=0}^{n}S_2(n,k)x^{\underline{k}}$
 
-
-
-![image-20230414130153028](C:\Users\26463\AppData\Roaming\Typora\typora-user-images\image-20230414130153028.png)
-
-
+$\sum_{i=0}^{n}i^k=\sum_{i=0}^{k}S(k,i)\frac{(n+1)^{\underline{i+1}}}{i+1}$
 
 ## 数论相关
 
@@ -2545,4 +2810,609 @@ $\large =(\sum_{i=1}^{n}\frac{a_{t,i}}{m}f(a_{t,i}-1)+\frac{m-a_{t,i}}{m(n-1)}f(
   有：$h_n=\sum_{i=0}^{n}f_iC(n,i)h_{n-i}+[n==0]$
 
   H=FH+1⇒F=1−H−1
+
+## 求生成树个数（矩阵树定理）
+
+给n个点m条边的图，求该图的**生成树个数**
+
+基尔霍夫矩阵：求生成树个数（这个不是求最小生成树个数的！）使用的数据范围较小，因为是用邻接矩阵存的图
+
+设基尔霍夫矩阵为G
+
+$G_{i,j}=degree(i) (i=j)$
+
+$G_{i,j}=-cnt(i,j)(i\neq j)$
+
+Matrix-Tree定理此定理利用图的Kirchhoff矩阵,可以在**O(N3)**时间内求出生成树的个数;
+
+```c++
+LL K[N][N];
+LL gauss(int n){//求矩阵K的n-1阶顺序主子式
+    LL res=1;
+    for(int i=1;i<=n-1;i++){//枚举主对角线上第i个元素
+        for(int j=i+1;j<=n-1;j++){//枚举剩下的行
+            while(K[j][i]){//辗转相除
+                int t=K[i][i]/K[j][i];
+                for(int k=i;k<=n-1;k++)//转为倒三角
+                    K[i][k]=(K[i][k]-t*K[j][k]+MOD)%MOD;
+                swap(K[i],K[j]);//交换i、j两行
+                res=-res;//取负
+            }
+        }
+        res=(res*K[i][i])%MOD;
+    }
+    return (res+MOD)%MOD;
+}
+int main(){
+    int n,m;
+    scanf("%d%d",&n,&m);
+    memset(K,0,sizeof(K));
+    for(int i=1;i<=m;i++){
+        int x,y;
+        scanf("%d%d",&x,&y);
+        K[x][x]++;
+        K[y][y]++;
+        K[x][y]--;
+        K[y][x]--;
+    }
+    printf("%lld\n",gauss(n));
+    return 0;
+}
+```
+
+## 二分图匹配
+
+```c++
+#include<bits/stdc++.h>
+using namespace std;
+#define ll long long
+const ll N=101000;
+#define endl '\n'
+const ll inf=1<<30;
+struct ty{
+	ll t,next;
+}edge[N<<1];
+ll head[N];
+ll cnt=0;
+void add(ll a,ll b)
+{
+	edge[++cnt].t=b;
+	edge[cnt].next=head[a];
+	head[a]=cnt;
+}
+ll n,m,e;
+ll a,b;
+ll ti=0;//时间戳 
+ll ans=0;
+ll df[N];//被匹配的时间 
+ll match[N];//匹配对象 
+bool dfs(ll u,ll tim)
+{
+	for(int i=head[u];i!=-1;i=edge[i].next)
+	{
+		ll y=edge[i].t;
+		if(df[y]==tim) continue;
+		df[y]=tim;
+		if(!match[y]/*还没配对，直接拉走*/||dfs(match[y],tim))
+		{
+			match[y]=u;
+			return 1; 
+		}
+	}
+	return 0;
+}
+int main()
+{
+	cin>>n>>m>>e;
+	memset(head,-1,sizeof head);
+	while(e--)
+	{
+	    cin>>a>>b;
+		add(a,b);	
+	} 
+	for(int i=1;i<=n;++i)
+	{
+		if(dfs(i,++ti)) ans++;
+	}
+	cout<<ans<<endl;
+	return 0;
+}
+```
+
+
+
+## KM
+
+```c++
+#include<bits/stdc++.h>
+using namespace std;
+#define ll long long
+#define endl '\n'
+const int INF=0x3f3f3f3f;
+const int N=305;
+
+int n,m,match[N],pre[N];
+bool vis[N];
+int favor[N][N];
+int val1[N],val2[N],slack[N];
+
+void bfs(int p)
+{
+    memset(pre,0,sizeof pre);
+    memset(slack,INF,sizeof slack);
+    
+    match[0]=p;
+    
+    int x=0,nex=0;
+    do{
+        vis[x]=true;
+        
+        int y=match[x],d=INF;
+        
+        for(int i=1;i<=m;i++)
+        {
+            if(!vis[i])
+            {
+                if(slack[i]>val1[y]+val2[i]-favor[y][i])
+                {
+                    slack[i]=val1[y]+val2[i]-favor[y][i];
+                    pre[i]=x;
+                }
+                if(slack[i]<d)
+                {
+                    d=slack[i];
+                    nex=i;
+                }
+            }
+        }
+        
+        for(int i=0;i<=m;i++)
+        {
+            if(vis[i])
+                val1[match[i]]-=d,val2[i]+=d;
+            else
+                slack[i]-=d;
+        }
+        
+        x=nex;
+        
+    }while(match[x]);
+    
+
+    while(x)
+    {
+        match[x]=match[pre[x]];
+        x=pre[x];
+    }
+}
+
+int KM()
+{
+    memset(match,0,sizeof match);
+    memset(val1,0,sizeof val1);
+    memset(val2,0,sizeof val2);
+    for(int i=1;i<=n;i++)
+    {
+        memset(vis,false,sizeof vis);
+        bfs(i);
+    }
+    int res=0;
+    for(int i=1;i<=m;i++)
+        res+=favor[match[i]][i];
+    return res;
+}
+
+int main()
+{
+	// Input favor[i][j]!!!
+	while(scanf("%d",&n)!=EOF)
+	{
+//		m=n;
+//		for(int i=1;i<=n;++i){
+//			for(int j=1;j<=m;++j)
+//			{
+//				scanf("%d",&favor[i][j]);
+//			}
+//		}
+		printf("%d\n",KM());
+	}
+	
+	return 0;
+}
+```
+
+
+
+## 差分约束
+
+![image-20230818193926689](C:\Users\acm-673\AppData\Roaming\Typora\typora-user-images\image-20230818193926689.png)
+
+
+
+## 数位dp
+
+[数位dp](https://so.csdn.net/so/search?q=数位dp&spm=1001.2101.3001.7020)基本上是处理位数相关的问题，不过也不一定
+
+大部分题目存在一定套路，但是有一些也不好想
+
+其dp状态的设置大致是由枚举的位数，以及每一位的状态（是否前导0，是否顶到上界），以及一些依题目而定的性质
+
+时间复杂度基本上就是dp枚举的状态数
+
+例子：
+
+大意：给出两个数a,b，求出[a,b]中各位数字之和能整除原数的数的个数，a,b<=1e18
+
+思路：
+
+考虑dp状态dp[i][j][k]表示枚举到前i位，前i位数字的和是j，前i位组成的数字是k，这是一个比较niave的想法，但是数据范围不支持我们这样处理第三维。考虑到最后只要求整除，所以可以考虑用k%j来代替k。但是这样还涉及到一个问题，就是如果j是不断变化的，就很难实现状态转移。所以我们可以在外层枚举j，然后dfs的时候就保持j不变就好了
+
+由于这里是考虑每一位数字的和，所以我们不用考虑前导0的问题
+
+```c++
+ll a[20];
+ll cnt=0;
+ll dp[20][200][200];
+ll dfs(ll x,ll sum,ll rel,ll op)
+{
+	if(x==0) return sum==0&&rel==0;
+	if(!op&&dp[x][rel][sum]!=-1) return dp[x][rel][sum]; 
+	ll lim=op?a[x]:9;
+	ll tot=0;
+	for(int i=0;i<=lim&&i<=sum;++i)
+	{	
+		tot+=dfs(x-1,sum-i,(rel*10%mod+i)%mod,op&&i==lim);	
+	}
+	if(!op) dp[x][rel][sum]=tot;
+	return tot;
+}
+ll f(ll x)
+{
+	cnt=0;
+	while(x)
+	{
+		a[++cnt]=x%10;
+		x/=10;
+	}
+	ll det=0;
+	for(int i=1;i<=9*cnt;++i)
+	{
+		mod=i;
+		memset(dp,-1,sizeof dp);
+		det+=dfs(cnt,i,0,1);
+	}
+	return det;
+}
+```
+
+大意：
+
+给定K,L,R，求L~R之间最多不包含超过K种数码的数的和。K<=10，L,R<=1e18
+
+思路：
+如果只是求满足条件的数字的个数的话就是上面提到的板子题了，这里要求和，我们同样可以考虑对相同状态进行合并求和。f[i][j]表示当前枚举到第i位，出现过的数码种类的状态为j，也就是我们要求的答案数组。g[i][j]表示当前枚举到第i位，出出现过的数码种类的状态为j的合法数字个数，也就是板子。考虑如何用g来推f。这里j可以10位二进制状压，我们每往下走一位，如果我们枚举第i位上填的数字是t，用j'表示下一位的数码种类数
+
+$g_{i,j}=\sum g_{i-1,j'},f_{i,j}=\sum 10^itg_{i-1,j'}+f_{i-1,j'}$
+
+f是数字的和，g是合法数字的个数
+
+有了这个之后，我们就直接推就可以了。然后因为需要下一个状态的f和g，所以我们dfs要返回两个值
+
+```c++
+ll a[20];
+ll cnt=0;
+pii dp[40][1030];
+ll p[40];
+void init()
+{
+	p[0]=1;
+	for(int i=1;i<=20;++i) p[i]=p[i-1]*10ll%mod;
+}
+bool check(ll x)
+{
+	ll cn=0;
+	while(x)
+	{
+		cn+=(x%2);
+		x/=2;
+	}
+	return cn<=k;
+}
+pii dfs(ll x,ll sum,ll head,ll op)
+{
+	if(x==0) return mk(0,1);
+	if(!op&&!head&&dp[x][sum]!=mk(-1ll,-1ll)) return dp[x][sum];
+	ll lim=op?a[x]:9;
+	ll s1=0,s2=0;
+	for(ll i=0;i<=lim;++i)
+	{
+		//f是数字的和，g是合法数字的个数
+		pii gt=mk(0,0);
+		if(head&&i==0) gt=dfs(x-1,0,1,op&&i==lim);
+		else if(check(sum|(1<<i))) gt=dfs(x-1,sum|(1<<i),0,op&&i==lim);
+		s1=(((s1+i*p[x-1]%mod*gt.second%mod)%mod)+gt.first)%mod;	
+		s2=(s2+gt.second)%mod;
+	} 
+	if(!op&&!head) dp[x][sum]=mk(s1,s2);
+	return mk(s1,s2);
+}
+ll f(ll x)
+{
+	cnt=0;
+	while(x)
+	{
+		a[++cnt]=x%10;
+		x/=10;
+	}
+	return dfs(cnt,0,1,1).first;
+}
+void solve()
+{
+	init();
+	for(int i=0;i<=20;++i)
+	{
+		for(int j=0;j<=1025;++j)
+		{
+			dp[i][j]=mk(-1ll,-1ll);
+		}
+	}
+	cin>>n>>m>>k;
+	cout<<((f(m)-f(n-1))%mod+mod)%mod<<endl;
+}
+```
+
+最后再提一嘴，有些时候会遇到题目说每一个数字是按位排序过的，也就是同一个数字内数位升序排列，然后要求处理相关问题。比如CF908G New Year and Original Order，[SDOI2010]代码拍卖会，这种题有一个不常见但是很关键的套路，就是将每一个数字拆分成若干个由1组成的数字的和，这个性质是由其数位升序带来的，做题的时候要留一个心眼。
+
+---
+
+大意：
+一个数字是好的，当且仅当对于x的每一个非0位的数字y，y|x
+
+问区间美丽数字的个数
+
+思路：
+
+ 我们很难在枚举的过程中将dp状态设置为与x模2-9的值都有关，因为这样不好合并相同状态。
+
+这里有两个小结论
+
+* 1.两个整数a,b满足a|x,b|x的充要条件是lcm(a,b)|x
+
+  Proof：
+
+  ->:由a|x,b|x知，x=m*a=n*b，则我们有a|(n*b)，若(a,b)=1,则由上述结论我们有a|n,故x=n*b=(k*a)*b=k*lcm(a,b),即lcm(a,b)|x     ----------1*
+
+  若(a,b)=d,则d*(a/d)=n*d*(b/d),即(a/d)=n*(b/d)，其中(a/d,b/d)=1，转为推导1故该方向得证
+
+  <-:显然
+
+  **推广一下就是：若干个数ai都整除x的充要条件是lcm{ai}|x**
+
+* 2.考虑n个数a1,a2...an,记其LCM为L，则x%ai=(x%L)%ai
+
+证明显然 
+
+有了上述性质，我们不难发现，可以用x%2520(1-9的最小公倍数)来代替x的值，那么首先值域就已经大大简化了。然后由性质1，我们只需要维护出现过数字的lcm即可，最后的判断条件就是前缀%2520的值%lcm=0
+
+那么我们记录dpi,j,k表示前i位，前缀模2520的值为j，前i位中非0位的lcm为k，就可以dp了。但是空间有点大，考虑优化。
+
+不难发现，第三维其实并没有很多数字，2-9中任意若干个数字的lcm一定是2520的因数，而2520的因数总共只有48个，就大大简化了空间，并且我们可以预处理
+
+```c++
+
+ll a[22];
+ll cnt=0;
+int mp[2522];
+ll dp[22][2522][52];
+int Gt[2522][2522];
+ll cm(ll x,ll y)
+{
+	if(x==0||y==0) return x|y;
+	ll Gcd=__gcd(x,y);
+	if(x>=y) swap(x,y);
+	if(Gt[x][y]) return Gt[x][y]; 
+	return Gt[x][y]=x*y/Gcd;
+}
+ll dfs(ll x,ll op,ll mo,ll Lcm)
+{
+	if(x==0) return mo%Lcm==0;
+	if(!op&&dp[x][mo][mp[Lcm]]!=-1) return dp[x][mo][mp[Lcm]];
+	ll tot=0;
+	ll lim=op?a[x]:9;
+	for(int i=0;i<=lim;++i)
+	{
+		if(i==0) tot+=dfs(x-1,op&&i==lim,mo*10%mod,Lcm);
+		else tot+=dfs(x-1,op&&i==lim,(mo*10%mod+i)%mod,cm(Lcm,i));
+	}
+	if(!op) dp[x][mo][mp[Lcm]]=tot;
+	return tot;
+	
+}
+void init()
+{
+	ll cn=0;
+	for(int i=1;i<=2520;++i)
+	{
+		if(2520%i) continue;
+		mp[i]=++cn;
+	}
+//	cout<<cn<<endl;
+}
+ll f(ll x)
+{
+	cnt=0;
+	while(x)
+	{
+		a[++cnt]=x%10;
+		x/=10;
+	}
+	return dfs(cnt,1,0,1);
+}
+```
+
+## 四边形不等式优化dp
+
+区间dp里，假如dp[i,j]和cost函数满足四边形不等式的话：
+
+dp[i][j]+dp[i+1][j+1]<=dp[i+1][j]+dp[i][j+1]
+
+cost[i][j]+cost[i+1][j+1]<=cost[i][j+1]+cost[i+1][j]
+
+一般能够证明其决策具有单调性
+
+若令s[i,j]表示dp[i,j]取得最优解时的点，则此时有：s[i][j-1]<=s[i][j]<=s[i+1][j]。利用这个，就可以大大简化时间复杂度 
+
+在常见的dp问题中，有两种非常经典的递推式
+
+dp[i,j]=dp[k,j-1]+cost(k+1,i)   0<=k<i：
+
+```c++
+#include<bits/stdc++.h>
+using namespace std;
+#define ll long long
+const ll N=3010;
+ll n,m;
+ll mas[N];
+ll dp[N][310];//前i个村庄里放j个邮局 
+ll f[N][N];//i与j之间放一个邮局时中间几个村庄到邮局的最近距离 
+ll d[N][N];//最优决策位置 
+int main()
+{
+	cin>>n>>m;
+	memset(dp,0x3f,sizeof dp);
+	dp[0][0]=0;
+	for(int i=1;i<=n;++i) cin>>mas[i];
+	sort(mas+1,mas+1+n);
+	for(int i=1;i<=n;++i)
+	{
+		for(int j=i+1;j<=n;++j)
+		{
+			f[i][j]=f[i][j-1]+mas[j]-mas[(i+j)/2]; 
+		}
+	}
+	for(int j=1;j<=m;++j)
+	{
+		d[n+1][j]=n;
+		for(int i=n;i;--i)
+		{
+			ll tmp=0x3f3f3f3f3f3f3f3f;
+			ll p;
+			for(int k=d[i][j-1];k<=d[i+1][j];++k)
+			{
+			    if(tmp>dp[k][j-1]+f[k+1][i])
+				{
+					tmp=dp[k][j-1]+f[k+1][i];
+					p=k;
+				}	
+			} 
+			dp[i][j]=tmp;
+			d[i][j]=p;
+//			for(int k=0;k<i;++k)
+//			{
+//			    dp[i][j]=min(dp[i][j],dp[k][j-1]+f[k+1][i]);	 
+//			} 
+		}
+	}
+	cout<<dp[n][m]<<endl;
+	return 0;
+} 
+```
+
+dp[i,j]=dp[i,k]+dp[k+1,j]+cost(i,j)     i<=k<=j：
+
+```c++
+#include<bits/stdc++.h>
+using namespace std;
+#define ll long long
+const ll N=2020;
+ll n;
+ll mas[N];
+ll dp[N][N];
+ll s[N][N];
+ll sum[N];
+ll w(ll l,ll r)
+{
+	return sum[r]-sum[l-1];
+}
+int main()
+{ios::sync_with_stdio(false);cin.tie(0);cout.tie(0);
+	while(cin>>n)
+	{
+		for(int i=1;i<=n;++i) cin>>mas[i];
+		for(int i=1+n;i<=n+n;++i) mas[i]=mas[i-n];
+	//	for(int i=1;i<=n;++i) cout<<mas[i]<<' ';
+	//	cout<<endl;
+		for(int i=1;i<=n+n;++i) sum[i]=sum[i-1]+mas[i];
+		memset(dp,0x3f,sizeof dp);
+		for(int i=0;i<=n+n;++i) dp[i][i]=0,s[i][i]=i;
+		for(int len=2;len<=n;len++){
+	            for(int i=1;i<=2*n-len+1;i++){
+	                int j=i+len-1;
+	                for(int k=s[i][j-1];k<=s[i+1][j];k++){
+	                    if(dp[i][j]>dp[i][k]+dp[k+1][j]+sum[j]-sum[i-1]){
+	                        dp[i][j]=dp[i][k]+dp[k+1][j]+sum[j]-sum[i-1];
+	                        s[i][j]=k;
+	                    }
+	                }
+	            }
+	        }
+		ll ans=1e17;
+		for(int l=1;l<=n;++l)
+		{
+			ans=min(ans,dp[l][l+n-1]);
+		}
+		cout<<ans<<endl;
+	}
+	return 0;
+} 
+```
+
+## 序列自动机
+
+```c++
+
+ll ne[N][30];
+void init()
+{
+	ll len=strlen(s+1);
+	for(int i=len;i;--i)
+	{
+		for(int j=0;j<26;++j) ne[i-1][j]=ne[i][j];
+	    ne[i-1][s[i]-'a']=i;
+	}
+}
+void solve()
+{//判断是否为子序列
+	cin>>(ss+1);
+	ll p=0;
+	for(int i=1;i<=strlen(ss+1);++i)
+	{
+		p=ne[p][ss[i]-'a'];
+		if(!p)
+		{
+			cout<<"No"<<endl;
+			return;
+		}
+	}
+	cout<<"Yes"<<endl;
+}
+```
+
+## 坐标旋转
+
+输入坐标，及一个角度制度数(90,180之类)，求坐标逆时针旋转该角度后的新坐标
+
+```c++
+const long double pi=acos(-1)
+int main()
+{
+	long double a,b,c,d,x,y,theta;
+	cin>>a>>b>>d;//坐标x，y 逆时针旋转角度
+	theta=(long double)d/(long double)360*1.0000000*2*pi;//弧度制
+	x=(long double)a*(long double)cos(theta)-b*sin(theta);
+	y=(long double)a*(long double)sin(theta)+b*cos(theta);
+	cout<<fixed<<setprecision(8)<<x<<' '<<y<<endl;
+	return 0;
+}
+```
 
