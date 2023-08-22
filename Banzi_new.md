@@ -2764,9 +2764,61 @@ $\large =(\sum_{i=1}^{n}\frac{a_{t,i}}{m}f(a_{t,i}-1)+\frac{m-a_{t,i}}{m(n-1)}f(
 
 再转化一下，$\large f(a+1)=\frac{m+an-2a}{m-a}f(a)-\frac{a(n-1)}{m-a}(f(a-1)+1)$
 
-代入边界条件$a=0$时，有$f(1)=f(0)$,所以我们可以设
+代入边界条件$a=0$时，有$f(1)=f(0)$,所以我们可以设$f(1)=f(0)=0$,毕竟势函数的初值并不重要
 
 这样就得到了f，也就是相当于得到了势函数$\phi(x_t)=\sum_{i}f(x_{t,i})$
+
+然后考虑势函数的第二个性质：$E(\phi(A_t))=C$是一个常值
+
+显然$E(\phi(A_t))=\sum_{i}f(a_{t,i})=f(m)+(n-1)f(0)$是一个常值
+
+所以根据我们的结论，$E(t)=E(\phi(A_0))-E(\phi(A_t))=\sum_{i}f(a_{0,i})-f(m)-(n-1)f(0)=\sum_{i}f(a_{0,i})-f(m)$
+
+这样我们就非常方便的得到了停时的期望
+
+不妨来看一个近一点的例子
+
+[杭电多校09 Coins](http://acm.hdu.edu.cn/contest/problem?cid=1102&pid=1008)
+
+大意：
+
+n个人，每个人手中初始有$a_i$个硬币，每次随机选择两个人，第一个人给第二个人一个硬币，如果某个人手中没有硬币了，则立即退出游戏，不再回来。当某一个人拥有全部硬币时，游戏结束
+
+问停时的期望
+
+题意与上一题十分相像，但是该题存在人数不固定的情况，所以我们描述游戏局面的时候要稍微改变一下
+
+还是令$m=\sum a_i$
+
+令$A_t=(a_{t,1},a_{t,2}...a_{t,h_t})$来描述第t个时刻的局面，其中$h_t$表示当前的剩余人数，显然它不是一个固定的值。但是我们能保证$\forall i\leq h_t,a_{t,i}>0$
+
+仿照上一题的思路，我们令$\phi(A_t)=\sum_{i=1}^{n}f(a_{t,i})$作为势函数，尝试确定f
+
+$\large E(\phi(A_{n+1})|A_n)=\sum_{i=1}^{h_t}\sum_{j\neq i}\frac{1}{h_t(h_t-1)}[f(a_{t,i}-1)+f(a_{t,j}+1)+\sum_{k\notin(i,j)}f(a_{t,k})]$
+
+$\large =\sum_{i=1}^{h_t}\frac{1}{h_t}f(a_{t,i}-1)+\frac{1}{h_t}f(a_{t,i}+1)+\frac{h_t}{h_t-2}f(a_{t,i})$
+
+代入$\large E(\phi(A_{n+1})-\phi(A_n)|A_0,A_1,...A_n)=-1$,也就是$\large E(\phi(A_{n+1})-\phi(A_n)|A_n)=-1$(显然这里当前局面也只与上一个局面有关)，有
+
+$\large \sum_{i=1}^{h_t} f(a_{t,i})=[\sum_{i=1}^{h_t}\frac{1}{h_t}f(a_{t,i}-1)+\frac{1}{h_t}f(a_{t,i}+1)+\frac{h_t}{h_t-2}f(a_{t,i})]+1$
+
+$\large =\sum_{i=1}^{h_t}(\frac{1}{h_t}f(a_{t,i}-1)+\frac{1}{h_t}f(a_{t,i}+1)+\frac{h_t}{h_t-2}f(a_{t,i})+\frac{1}{h_t})$
+
+抽象出$\large f(a)=\frac{1}{h}f(a-1)+\frac{1}{h}f(a+1)+\frac{h}{h-2}f(a)+\frac{1}{h}$
+
+$f(a+1)-f(a)=f(a)-f(a-1)-1$
+
+令$g(a)=f(a)-f(a-1),有g(a)=g(0)-a$，则$f(a)=f(0)+ag(0)-\frac{a(a+1)}{2}$
+
+取$f(0)=g(0)=0$,则$f(a)=-\frac{a(a+1)}{2}$
+
+所以$E(t)=E(\phi(A_0))-E(\phi(A_t))=\sum_{i=1}^{n}f(a_{0,i})-f(m)$
+
+未完待续
+
+
+
+
 
 
 
