@@ -943,13 +943,129 @@ int main()
 }
 ```
 
-
-
 #### 分治
 
-* 多维
-* 一个抽象的类莫队
-* 一维也有
+分治的方法主要用于同一层之间的点相互之间线性无关的情况
+
+比如$F_1$ $:dp_{i,j}=min\{dp_{i-1,k}+w(k,i)\}$.$F_2$ $:dp_i=min\{a_k+w(k,i)\}$
+
+可以看到同一层之间的点不会相互转移
+
+那么如果同一层的点满足决策单调性的话，也就是意味着决策点是单调的，我们就可以采用分治的策略来优化转移的过程
+
+假设当前需要转移的区间是$[L,R]$,决策点的选择区间是$[p_l,p_r]$(显然一开始转移区间和决策点的选择区间都为$[1,n]$)，设$mid=\frac{L+R}{2}$,我们可以先暴力求出$mid$的最优决策点$pos$,那么$[L,mid-1]$的决策点选择区间就是$[p_l,pos]$,$[mid+1,R]$的决策点选择区间就是$[pos,p_r]$，那么这样分治下去就好了。
+
+如果我们可以$O(1)$求代价的话，对$mid$求$pos$的时间复杂度就只有$O(n)$,再加上每次要处理的区间长度会变成原本的一半，所以处理区间为n的复杂度是$f(n)=O(n)+O(f(n/2))$,总复杂度是$O(nlogn)$
+
+一个板子：
+
+```c++
+void Solve(ll l,ll r,ll pl,ll pr)
+{
+	//当前分治处理区间是[l,r],最佳决策区间是[pl,pr]
+	ll mid=l+r>>1;
+	ll pos;//mid的最佳决策点
+	dp[mid]=gt(pos=pl,mid);
+	for(int i=pl+1;i<=min(mid-1,pr);++i)
+	{
+		if(gt(i,mid)<dp[mid]) dp[mid]=gt(pos=i,mid);
+	}
+	if(l<mid) Solve(l,mid-1,pl,pos);
+	if(r>mid) Solve(mid+1,r,pos,pr);
+}
+```
+
+
+
+[JSOI2016 灯塔](https://www.luogu.com.cn/problem/P5503) 
+
+大意：
+
+给定$h_i$，对于每一个$i$,要求$\forall j,p_i\geq h_j-h_i+\sqrt{|i-j|}$,求最小的$p_i$
+
+思路：
+
+不妨先将绝对值去掉，那么$p_i=\left\{\begin{matrix}
+min\{h_j+\sqrt{i-j}-h_i\} & j<i\\ 
+min\{h_j+\sqrt{j-i}-h_i\} & j>i
+\end{matrix}\right.$
+
+那么我们只要处理第一个式子就好了，第二个式子只要把整个数组反一下即可
+
+可以发现$p_i=min\{h_j+\sqrt{i-j}-h_i\}$满足决策单调性，并且$p_i$之间相互无关，所以直接分治就解决了
+
+code
+
+```c++
+#include<bits/stdc++.h>
+using namespace std;
+#define ll long long
+#define IL inline
+#define endl '\n'
+const ll N=5e5+10;
+double ep=1e-9;
+const ll mod=998244353;
+const ll inf=1e18;
+ll n;
+ll mas[N];
+double dp1[N],dp2[N];
+double gt(ll p,ll x)
+{
+    return mas[p]+sqrt(x-p)-mas[x];
+}
+void Solve(ll l,ll r,ll pl,ll pr,double *dp)
+{
+    // if(l>r||pl>pr) return;
+    ll mid=(l+r)>>1;
+    ll pos=pl;
+    for(int i=pl;i<=min(mid,pr);++i)
+    {
+        if(gt(i,mid)-dp[mid]>=-ep) dp[mid]=gt(pos=i,mid);//要取>=0
+    }
+    if(l<mid) Solve(l,mid-1,pl,pos,dp);
+    if(r>mid) Solve(mid+1,r,pos,pr,dp);
+}
+void solve()
+{
+    cin>>n;
+    for(int i=1;i<=n;++i) cin>>mas[i];
+    Solve(1,n,1,n,dp1);
+    reverse(mas+1,mas+1+n);
+    Solve(1,n,1,n,dp2);
+    for(int i=1;i<=n;++i)
+    {
+        double x=fmax(dp1[i],dp2[n-i+1]);
+        cout<<(ll)ceil(x)<<endl;
+    }
+}
+int main()
+{
+    ios::sync_with_stdio(0);cin.tie(0);cout.tie(0);
+    // ll t;t=read();while(t--)
+    solve();
+    return 0;
+}
+```
+
+[SDOI2016 征途](https://www.luogu.com.cn/problem/P4072)
+
+[CF321 E](https://www.luogu.com.cn/problem/CF321E)
+
+##### 类莫队做法
+
+注意到分治要保证时间复杂度的前提是每次求$w$代价的复杂度是$O(1)$的
+
+但是有一类$w$比较特殊：关于区间的信息的记录，比如区间数字种类数等。这种问题我们一般可以离线下来用莫队处理，那么仿照莫队用左右端点的连续移动就可以做到$O(1)$转移了，因为我们的决策点的选择范围也刚好是一个连续的区间，所以这样的话复杂度是正确的
+
+[CF868 F](https://www.luogu.com.cn/problem/CF868F)
+
+[CmdOI2019 任务分配问题](https://www.luogu.com.cn/problem/P5574)
+
+#### SMAWK
+
+SMAWK的用途跟分治一样，用于处理同一层之间没有转移关系的情况，但是复杂度会更优，可以达到$O(n)$
+
+我们考虑从另一个角度来理解决策单调性
 
 #### 二分栈
 
@@ -975,13 +1091,7 @@ int main()
 
 [POI2011 Lighting Conductor] (https://www.luogu.com.cn/problem/P3515) 分治/二分栈
 
-[CF868 F] (https://www.luogu.com.cn/problem/CF868F) 分治+类莫队
-
-[JSOI2016 灯塔] (https://www.luogu.com.cn/problem/P5503) 分治
-
 [SDOI2016 征途] (https://www.luogu.com.cn/problem/P4072) 分治/Wqs二分+斜率优化
-
-[CmdOI2019 任务分配问题] (https://www.luogu.com.cn/problem/P5574) 分治+类莫队
 
 [CF321 E] (https://www.luogu.com.cn/problem/CF321E) 分治/Wqs二分+单调队列
 
