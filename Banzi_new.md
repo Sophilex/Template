@@ -2272,6 +2272,14 @@ ll gt(ll a,ll b,ll c)
 }
 ```
 
+### Stein算法
+
+欧几里得算法的缺陷在于，大整数对大整数的取模比较困难并且复杂度较高，而Stein算法避免了这个问题。
+
+流程：如果a,b都是偶数，则先同时/2并且给gcd乘2，否则如果有一个偶数则给它/2，否则gcd(a,b)=gcd(b,a-b)
+
+注意到每次减完之后都会/2，复杂度也是log级别的
+
 ## 离散对数问题
 
 ### BSGS
@@ -2756,9 +2764,9 @@ $\large =(\sum_{i=1}^{n}\frac{a_{t,i}}{m}f(a_{t,i}-1)+\frac{m-a_{t,i}}{m(n-1)}f(
 
 那么我们可以把末尾的1分配到每一个和式里面去，这样左右的形式就统一了
 
-所以$\large \sum f(a_{t,i})=\sum_{i=1}^{n}[\frac{a_{t,i}}{m}f(a_{t,i}-1)+\frac{m-a_{t,i}}{m(n-1)}f(a_{t,i}+1)+\frac{(m-a_{t,i})(n-2)}{m(n-1)}f(a_{t,i})+\frac{a_{t,i}}{n}]$
+所以$\large \sum f(a_{t,i})=\sum_{i=1}^{n}[\frac{a_{t,i}}{m}f(a_{t,i}-1)+\frac{m-a_{t,i}}{m(n-1)}f(a_{t,i}+1)+\frac{(m-a_{t,i})(n-2)}{m(n-1)}f(a_{t,i})+\frac{a_{t,i}}{m}]$
 
-那么不妨记$\large f(a)=\frac{a}{m}f(a-1)+\frac{m-a}{m(n-1)}f(a+1)+\frac{(m-a)(n-2)}{m(n-1)}f(a)+\frac{a}{n}$
+那么不妨记$\large f(a)=\frac{a}{m}f(a-1)+\frac{m-a}{m(n-1)}f(a+1)+\frac{(m-a)(n-2)}{m(n-1)}f(a)+\frac{a}{m}$
 
 这样和式还是成立的，我们也成功抽象出了f函数
 
