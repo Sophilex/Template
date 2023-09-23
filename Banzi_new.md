@@ -3597,3 +3597,33 @@ int main()
 }
 ```
 
+## 自适应辛普森
+
+时间复杂度:
+
+$O(log\frac{r-l}{eps}T(cal))$
+
+其中$r,l$为积分区间，$eps$为精度,$T(cal)$为单次计算的时间复杂度
+
+如果积分函数的最高次$\leq $2次的话，就可以用这个
+
+```c++
+double f(double x){  
+    return //积分函数
+}
+double simpson(double a,double b){
+    double c=(a+b)/2.0;
+    return (f(a)+f(b)+4.0*f(c))*(b-a)/6.0;
+}
+double ars(double a,double b,double eps){  //积分区域a~b,eps为题目要求精度*10-2
+    double c=(a+b)/2.0;
+    double mid=simpson(a,b),l=simpson(a,c),r=simpson(c,b);
+    if(fabs(l+r-mid)<=15*eps)  return l+r+(l+r-mid)/15.0;
+    return ars(a,c,eps/2.0)+ars(c,b,eps/2.0);
+}
+
+```
+
+注意事项：
+
+* 存在误差，在时间复杂度允许时，建议开大精度范围
