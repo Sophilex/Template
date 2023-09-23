@@ -1517,6 +1517,182 @@ int main()
 
 ```
 
+[Hdu Landmine](http://acm.hdu.edu.cn/showproblem.php?pid=7358)
+
+大意：
+一棵树，每一个点有一个半径$r_i$，若i点被引爆，一秒后距离i点$\leq r_i$的点被引爆
+
+$\forall i\in [2,n],$引爆i点之后，1点什么时候被引爆
+
+思路：
+
+考虑 **BFS**，每次要找所有未被扫过的点中能够炸到当前点 *i* 的所有点，相当于找所有未被标记的点 *j* 使
+
+得 *dist*(*i, j*) *≤* $r_j$。建立点分树，那么就相当于对所有 *i* 在点分树上的祖先 *u*，找 *u* 点分树子树中所有未
+
+被标记的点 *j*，使得 *dist*(*i, u*) *≤* *$r_j$* *−* *dist*(*j, u*)(因为在点分树下i,j之间的路径一定经过u)。直接对每个点 *u* 按照 $r_j$*−* *dist*(*j, u*) 将所有 *j* 排序即可。
+
+每次扫指针找到所有需要求的点。
+
+这题主要还是看一下另一种对距离的处理方法，具体见代码
+
+```c++
+#include<bits/stdc++.h>
+using namespace std;
+#define ll long long
+#define IL inline
+#define pii pair<ll,ll>
+#define endl '\n'
+const ll inf=2e9;
+const ll N=1e5+10;
+struct ty
+{
+    ll t,l,next;
+}edge[N<<1];
+ll cn=0;
+ll head[N];
+namespace FastIOT{
+    const int bsz=1<<18;
+    char bf[bsz],*hed,*tail;
+    inline char gc(){if(hed==tail)tail=(hed=bf)+fread(bf,1,bsz,stdin);if(hed==tail)return 0;return *hed++;}
+    template<typename T>IL void read(T &x){T f=1;x=0;char c=gc();for(;c>'9'||c<'0';c=gc())if(c=='-')f=-1;
+    for(;c<='9'&&c>='0';c=gc())x=(x<<3)+(x<<1)+(c^48);x*=f;}
+    template<typename T>IL void print(T x){if(x<0)putchar(45),x=-x;if(x>9)print(x/10);putchar(x%10+48);}
+    template<typename T>IL void println(T x){print(x);putchar('\n');}
+}
+using namespace FastIOT;
+void add(ll a,ll b,ll c)
+{
+    edge[++cn].t=b;
+    edge[cn].l=c;
+    edge[cn].next=head[a];
+    head[a]=cn;
+}
+ll n,m,a,b,c;
+ll siz[N],mx[N],rt,nt,dep[N];
+bool vis[N];
+//节点是否已经分治过，在某次分治中距离为dis_vis[i]的节点是否存在
+ll ans[110];
+ll R[N];//radius
+ll F[N];//虚树中的父亲节点
+ll cur;//当前重心的dep
+vector<pii> vt[N];//每一个点的子树中的信息
+ll dis[20][N];
+ll tim[N],rvis[N];
+ll vt_siz[N];//每一个点的子树中的最后一个点，倒序枚举
+queue<ll> q;
+void find_rt(ll id,ll fa)
+{
+    siz[id]=1;mx[id]=0;
+    for(int i=head[id];i!=-1;i=edge[i].next)
+    {
+        ll y=edge[i].t;
+        if(y==fa||vis[y]) continue;
+        find_rt(y,id);
+        mx[id]=max(mx[id],siz[y]);
+        siz[id]+=siz[y];
+    }
+    mx[id]=max(mx[id],nt-siz[id]);//这里是nt-siz[id],因为重心要在不同子树里面求
+    if(mx[id]<mx[rt])
+    {
+        rt=id;
+    }
+}
+void cal(ll id,ll fa)
+{
+    // cout<<id<<' '<<fa<<" "<<cur<<" "<<dis[cur][id]<<endl;
+    vt[rt].push_back(make_pair(R[id]-dis[cur][id],id));
+    for(int i=head[id];i!=-1;i=edge[i].next)
+    {
+        ll y=edge[i].t;
+        if(y==fa||vis[y]) continue;
+        dis[cur][y]=dis[cur][id]+edge[i].l;
+        cal(y,id);
+    }
+}
+void dfz_(ll id,ll p)//点分治
+{
+    F[id]=p;vis[id]=1;
+    cur=dep[id];
+    dis[cur][id]=0;
+    cal(id,0);
+    sort(vt[id].begin(),vt[id].end());//处理出了子树下的所有未被标记的节点到其的价值
+    for(int i=head[id];i!=-1;i=edge[i].next)
+    {
+        ll y=edge[i].t;
+        if(vis[y]) continue;
+        //递归
+        rt=0;mx[rt]=nt=siz[y];
+        find_rt(y,0);find_rt(rt,0);//更新siz
+        dep[rt]=dep[id]+1;
+        dfz_(rt,id);
+    }
+}
+void gt(ll id)
+{
+    ll now=id;
+    while(id)
+    {
+        // cout<<id<<' '<<now<<" "<<dis[dep[id]][now]<<endl;
+        while(vt_siz[id]>=0 && vt[id][vt_siz[id]].first>=dis[dep[id]][now])//虚树中now到id的距离 
+        {                          //因为now必然在id的子树下面，所以其它与id同高的点的dep不会将dis[dep][id]更新掉 
+            ll y=vt[id][vt_siz[id]].second;
+            vt_siz[id]--;
+            if(rvis[y]) continue;
+            rvis[y]=1;
+            tim[y]=tim[now]+1;
+
+            q.push(y);
+        }
+        id=F[id];
+    }
+}
+void init(ll n)
+{
+    cn=0;
+    for(int i=0;i<=n+5;++i) head[i]=-1,siz[i]=0,mx[i]=0,dep[i]=0,R[i]=0,F[i]=0,vt[i].clear();
+    rt=0,nt=0,cur=0;
+    for(int i=0;i<=19;++i) for(int j=0;j<=n;++j) dis[i][j]=0;
+    for(int i=0;i<=n+5;++i) tim[i]=inf,rvis[i]=0,vis[i]=0;
+    while(!q.empty()) q.pop();
+}
+void solve()
+{
+    read(n);init(n);
+    for(int i=2;i<=n;++i) read(R[i]);
+    for(int i=1;i<n;++i)
+    {
+        read(a);read(b);read(c);
+        add(a,b,c);
+        add(b,a,c);
+    }
+    mx[0]=nt=n;
+    find_rt(1,0);
+    find_rt(rt,0);//更新siz数组，因为现在是以一个新的点为根节点
+    dep[rt]=0;
+    dfz_(rt,0);
+    tim[1]=0,rvis[1]=1;
+    for(int i=1;i<=n;++i) vt_siz[i]=vt[i].size()-1;
+    q.push(1);
+    while(!q.empty())
+    {
+        ll fr=q.front();
+        q.pop();
+        gt(fr);
+    }
+    for(int i=2;i<=n;++i)
+    {
+        cout<<((tim[i]==inf)?-1:tim[i])<<" ";
+    }
+    cout<<endl;
+}
+int main()
+{
+    ll t;cin>>t;while(t--)
+    solve();
+}
+```
+
 
 
 ## 李超线段树
@@ -2652,6 +2828,237 @@ $S_1(n,k)=S_1(n-1,k-1)+(n-1)S_1(n-1,k)$
 
 $\sum_{i=0}^{n}i^k=\sum_{i=0}^{k}S(k,i)\frac{(n+1)^{\underline{i+1}}}{i+1}$
 
+
+
+## 树与图上的计数问题
+
+### Prufer序列
+
+起源于对$Cayley$定理的证明，但是其功能远不止于此
+
+* $Tree->Prufer:$
+
+  ①从树上选择编号最小的叶子节点，序列的下一位为其父节点的编号。
+
+  ②删去该叶子节点。
+
+  ③重复①和②，直到树只剩下两个节点，此时序列的长度刚好为 n−2 。
+
+* $Prufer—>Tree:$
+
+  ①选择编号最小的叶子节点（即未出现在序列中的节点），其父节点就是序列的第 i （ i 初始为1）个元素。
+
+  ②由性质可得，其父节点的度数为其出现次数+1。将该叶子节点删去，其父节点度数-1。若度数变成1，则父节点也成为叶子节点。
+
+  ③将 i 加一，然后重复①和②，直到序列的每一个元素都使用完毕。
+
+```c++
+ll p[N];
+ll d[N];//度数
+ll f[N];//连边
+ll ans=0;
+void Prufer_To_Tree(ll n)
+{
+    //f记录1-n-1的连边情况
+    for(int i=1;i<=n-2;++i) cin>>p[i],d[p[i]]++;
+    p[n-1]=n;
+    for(int i=1,j=1;i<n;++i,++j)
+    {
+        while(d[j]) j++;
+        f[j]=p[i];//把最小的叶往prufer序列第一个点上接 对应减掉度数
+
+        while(i<n&&!--d[p[i]]&&p[i]<j) f[p[i]]=p[i+1],i++;
+        //如果序列第一个点减掉度数后产生了新的更小的叶 就往序列下一个点上接
+    }
+    for(int i=1;i<=n;++i) ans^=1ll*i*f[i];
+}
+void Tree_To_Prufer(ll n)
+{
+    for(int i=1;i<n;++i) cin>>f[i],d[f[i]]++;
+    for(int i=1,j=1;i<=n-2;++i,++j)
+    {
+        while(d[j]) j++;
+        p[i]=f[j];
+        while(i<=n-2&&!--d[p[i]]&&p[i]<j) p[i+1]=f[p[i]],i++;
+    }
+    for(int i=1;i<=n-2;++i) ans^=1ll*i*p[i];
+}
+```
+
+由此我们发现两者是一一对应的，也就是双射，所以大小为n的有标号无根树的个数等于长度为$n-2$的prufer序列的个数，自然为$n^{n-2}$，$Cayley$定理得证
+
+#### Prufer序列的性质
+
+由Prufer序列构造的过程，我们可以发现其具有两个显而易见的性质。
+
+* 构造完后剩下的两个节点里，一定有一个是编号最大的节点。
+
+* **对于一个 n 度的节点，其必定在序列中出现 n−1 次**。因为每次删去其子节点它都会出现一次，最后一次则是删除其本身。一次都未出现的是原树的叶子节点。
+
+#### 应用
+
+**1、无向完全图的不同生成树数：**
+
+ $n^{n−2}$ 。
+
+**2、** n **个点的无根树计数：**
+
+同上问题。
+
+**3、** n **个点的有根树计数：**
+
+对每棵无根树来说，每个点都可能是根，故总数为 $n^{n−2}×n=n^{n−1}$ 。
+
+**4、** n **个点，每点度分别为** $d_i$ **的无根树计数：**
+
+显然就是一个多重集，答案为$\frac{(n-2)!}{\prod_{i=1}^{n}d_i-1}$
+
+**5、** **有标号的完全二分图$K_{n,m}$的生成树个数为$n^{m-1}m^{n-1}$:**
+
+考虑将其生成树的prufer序列按照原本顺序分成$f_i\leq n,f_i>n$两部分。
+
+对于$f_i\leq n$的部分，一定是删去某个标号$>n$的点之后留下$f_i$的，因为这是一张二分图。所以该部分的点一定恰好有$m-1$个（右部有m个点，整张图删完之后一定在左右部各留下一个点，所以右部一共要删去$m-1$个点）
+
+$f_i>n$部分同理。
+
+所以一个此时还是可以用一个prufer序列与合法生成树对应，故方案数为$n^{m-1}m^{n-1}$
+
+#### Tips:
+
+一般要特判n=1的情况
+
+
+
+[Valuable Forests](https://ac.nowcoder.com/acm/contest/28665/E)
+
+大意：
+
+定义一个树的权值为其所有节点的度数的平方和，森林的权值为所有树的权值和。求大小为n的所有有标号森林的权值和
+
+思路：
+
+$f_i$表示大小为i的所有有标号森林的权值和，也就是答案
+
+考虑对于最后一个点所在的树的大小为k的情况
+
+则$f_n=\sum_{k=1}^{n}\binom{n-1}{k-1}f_{n-k}m_k+\binom{n-1}{k-1}g_kh_{n-k}$
+
+其中$m_i$表示大小为$i$的有标号无根树的个数，$g_i$表示大小为$i$的所有有标号无根树的权值和，$h_{n-k}$表示大小为$n-k$的森林的数量。$\binom{n-1}{k-1}$是因为枚举的k的含义是n所在树的大小，我要从剩下$n-1$个点里面选$k-1$个点。如果不这样枚举的树的组合就会算重。
+
+$m_n$很简单：$n=1$时$m_1=1$，否则$m_n=n^{n-2}$
+
+对于$g_n$,我们枚举所有度数为i的贡献
+
+转化到prufer序列中看这个问题，度数为i，表示出现了$i-1$次，所以强制选定对应的数字以及位置，剩下的$n-1$个数随便放
+
+$g_n=\sum_{i=1}^{n-1}i^2n\binom{n-2}{i-1}{n-1}^{n-1-i}$
+
+$h_n$的更新思路和$f$差不多，枚举最后一个点所在的树的大小即可
+
+$h_n=\sum_{i=1}^{n}\binom{n-1}{i-1}h_{n-i}m_i$
+
+[cf 156D](https://codeforces.com/problemset/problem/156/D)
+
+大意：
+
+给定n个点以及m条连边，记最少添加T条边使得整张图连通，问有多少种恰好添加T条边的方案使得图连通
+
+思路:
+
+记当前连通块个数为k，则T=k-1
+
+对于每一个连通块，其大小为$a_i$，如果其度数为$d_i$的话，我们可以在以连通块为单位的情况下得到生成树个数为$\binom{k-2}{d1-1,d2-1...d_k-1}$
+
+对于每一个连通块，固定连边的标号顺序（比如第1条边来自标号最小的连通块，依次类推），那么此时总方案数为$\binom{k-2}{d1-1,d2-1...d_k-1}*\prod_{i=1}^{k}a_i^{d_i}$,因为每一条边都可以有$a_i$种选择
+
+所以答案为$\sum_{\sum d_i=k-2}\binom{k-2}{d1,d2...d_k}*\prod_{i=1}^{k}a_i^{d_i+1}=\sum_{\sum d_i=k-2}\frac{(k-2)!}{\prod_{i=1}^{k} d_i!}*\prod_{i=1}^{k}a_i^{d_i+1}=(k-2)!\prod_{i=1}^{k} a_i(\sum_{\sum_{i=1}^{k} d_i=k-2}\prod_{i=1}^{k}\frac{a_i^{d_i}}{d_i!})$
+
+注意到$(k-2)!\prod_{i=1}^{k} a_i$是一个常数，我们只用看后面
+
+记生成函数$f_x=\sum_{i=0}^{\inf}\frac{x_i}{i!}=e^x$
+
+不难发现后面其实是k个函数$f_{a_i}$的卷积的某一项,故最终答案为$[x^{k-2}]\prod_{i=1}^{k}e^{a_ix}=[x^{k-2}]e^{nx}=\frac{n^{k-2}}{(k-2)!}$
+
+所以最终答案为$n^{k-2}\prod_{i=1}^{k}a_i$
+
+
+
+### LGV引理
+
+在一个有向无环图G中，出发点$A=\{a_1,a_2,...a_n\}$，目标点$B=\{b_1,b_2,..b_n\}$。有向边$e$的权值为$w_e$，$e(u,v)$为路径边权乘积之和，即$e(u,v)=\sum_{P:a->b}\prod_{e\in P}w_e$
+
+则$\begin{vmatrix}
+ e(a_1,b_1)& e(a_1,b_2) & ... & e(a_1,b_n)\\ 
+ e(a_2,b_1)& e(a_2,b_1) & ... & e(a_2,b_n)\\ 
+ ...& ... &  & ...\\ 
+ e(a_n,b_1)& e(a_n,b_2) & ... & e(a_n,b_n)
+\end{vmatrix}=\sum_{S:A->B}(-1)^{N(\sigma)}\prod_{i=1}^n\prod_{e\in S_i}w_e$
+
+其中$\sigma$是一个n元置换，$N(\sigma)$表示逆序对个数,$S_i:a_i->b_i$是一组A到B的不相交路径。
+
+**此处的不相交是指处处不存在相同的点在两条路径中同时存在，起终点也不行，所以A里的元素互不相同。如果初始条件并非如此，可能要转化一下**
+
+在算法竞赛中，该引理在普通的DAg下没有过多的用处，因为其右式还是过于复杂。但是如果图满足所有边权为1（这样$e(u,v)\equiv1$,就可以表示路径数量了），并且只存在唯一的一个$\sigma $满足所有$a_i->b_i$不相交的话，此时右式只有一个因子，含义就是整张图的不相交路径组数，就可以用左式的行列式表示了
+
+[Monotonic Matrix](https://ac.nowcoder.com/acm/contest/28665/F)
+
+大意：
+
+$A_1(1,0),A_2(0,1),B_1(n,m+1),B_2(n+1,m)$,求$A_1->B_1,A_2->B_2$的不相交路径数。其中每一步只能向上/向右
+
+套板子即可
+
+```c++
+#include <bits/stdc++.h>
+#define pii pair<int,int>
+#define il inline
+#define ll long long
+using namespace std;
+const int N=2010;
+const ll inf=1e18;
+const ll mod=1e9+7;
+ll n,m;
+ll c[N][N];
+void init(ll n)
+{
+    for(int i=0;i<=n;++i)
+    {
+        for(int j=0;j<=i;++j)
+        {
+            if(j==0) c[i][j]=1;
+            else c[i][j]=(c[i-1][j-1]+c[i-1][j])%mod;
+        }
+    }
+}
+ll f(ll x1,ll y1,ll x2,ll y2)
+{
+    //(x1,y1)->(x2,y2)
+    ll len1=x2-x1;
+    ll len2=y2-y1;
+    return c[len1+len2][len2];
+}
+void solve()
+{
+    // cin>>n>>m;
+    ll a=f(0,1,n,m+1)*f(1,0,n+1,m)%mod;
+    ll b=f(0,1,n+1,m)*f(1,0,n,m+1)%mod;
+    cout<<((a-b)%mod+mod)%mod<<endl;
+}
+int main()
+{
+//     freopen("1.out","w",stdout);
+    ios::sync_with_stdio(0);cin.tie(0);cout.tie(0);
+    init(2005);
+    while(cin>>n>>m)
+    // ll t;cin>>t;while(t--)
+    solve();
+    return 0;
+}
+
+```
+
+
+
 ## 数论相关
 
 ### 二项式反演
@@ -3431,122 +3838,114 @@ ll f(ll x)
 }
 ```
 
-## 四边形不等式优化dp
+[CF908G](https://blog.csdn.net/sophilex/article/details/131385426?spm=1001.2014.3001.5502)
 
-区间dp里，假如dp[i,j]和cost函数满足四边形不等式的话：
+求区间[L,R]内每一个数字在各数位排序后得到的数的和，答案对1e9+7取模
 
-dp[i][j]+dp[i+1][j+1]<=dp[i+1][j]+dp[i][j+1]
+n<=1e700
 
-cost[i][j]+cost[i+1][j+1]<=cost[i][j+1]+cost[i+1][j]
+思路：
 
-一般能够证明其决策具有单调性
+这道题唯一的性质就是每一个数字的各个数位是升序排列的，然后我们可以发现这么一个结论：
 
-若令s[i,j]表示dp[i,j]取得最优解时的点，则此时有：s[i][j-1]<=s[i][j]<=s[i+1][j]。利用这个，就可以大大简化时间复杂度 
+每一个数字都可以被**最多9个由1组成的数**累加得到
 
-在常见的dp问题中，有两种非常经典的递推式
+举个例子,23349,可以按照如下方式拆分
 
-dp[i,j]=dp[k,j-1]+cost(k+1,i)   0<=k<i：
+<img src="C:\Users\26463\AppData\Roaming\Typora\typora-user-images\image-20230917100803071.png" alt="image-20230917100803071" style="zoom:50%;" />
 
-```c++
-#include<bits/stdc++.h>
-using namespace std;
-#define ll long long
-const ll N=3010;
-ll n,m;
-ll mas[N];
-ll dp[N][310];//前i个村庄里放j个邮局 
-ll f[N][N];//i与j之间放一个邮局时中间几个村庄到邮局的最近距离 
-ll d[N][N];//最优决策位置 
-int main()
-{
-	cin>>n>>m;
-	memset(dp,0x3f,sizeof dp);
-	dp[0][0]=0;
-	for(int i=1;i<=n;++i) cin>>mas[i];
-	sort(mas+1,mas+1+n);
-	for(int i=1;i<=n;++i)
-	{
-		for(int j=i+1;j<=n;++j)
-		{
-			f[i][j]=f[i][j-1]+mas[j]-mas[(i+j)/2]; 
-		}
-	}
-	for(int j=1;j<=m;++j)
-	{
-		d[n+1][j]=n;
-		for(int i=n;i;--i)
-		{
-			ll tmp=0x3f3f3f3f3f3f3f3f;
-			ll p;
-			for(int k=d[i][j-1];k<=d[i+1][j];++k)
-			{
-			    if(tmp>dp[k][j-1]+f[k+1][i])
-				{
-					tmp=dp[k][j-1]+f[k+1][i];
-					p=k;
-				}	
-			} 
-			dp[i][j]=tmp;
-			d[i][j]=p;
-//			for(int k=0;k<i;++k)
-//			{
-//			    dp[i][j]=min(dp[i][j],dp[k][j-1]+f[k+1][i]);	 
-//			} 
-		}
-	}
-	cout<<dp[n][m]<<endl;
-	return 0;
-} 
-```
+最多只有9个是因为每一位最大只有9。然后我们看一下每一行的1的个数，其实也不难发现，第i行的1的个数=大于等于i的数字的个数，手模一下就可以验证了。
 
-dp[i,j]=dp[i,k]+dp[k+1,j]+cost(i,j)     i<=k<=j：
+所以在第d行，计数字x中>=d的数字的个数为k，则x在第d行的贡献就是(10^k-1)/9(其实就是在构造k个1)
+
+在此基础上，我们分9次来计算每一行的贡献。对于第d行，设dpi,j表示前i位，有j位>=d,直接做数位dp即可
+
+所以此题的关键就是用1来组成数字，剩余的工作就都是很基础的了。不好想，只能说留个印象。
 
 ```c++
 #include<bits/stdc++.h>
 using namespace std;
 #define ll long long
-const ll N=2020;
-ll n;
-ll mas[N];
-ll dp[N][N];
-ll s[N][N];
-ll sum[N];
-ll w(ll l,ll r)
+#define endl '\n'
+const ll N=1e5+10;
+const ll mod=1e9+7;
+string n;
+ll a[710];
+ll cnt=0;
+ll dp[710][710]; 
+ll p[710];
+ll inv9;
+ll ksm(ll x,ll y)
 {
-	return sum[r]-sum[l-1];
+	ll ans=1;
+	while(y)
+	{
+		if(y&1) ans=ans*x%mod;
+		x=x*x%mod;
+		y>>=1;
+	}
+	return ans;
+}
+ll inv(ll x)
+{
+	return ksm(x,mod-2);
+}
+void init()
+{
+	inv9=inv(9); 
+	ll now=1;
+	for(int i=1;i<=710;++i)
+	{
+		p[i]=((now*10%mod)-1+mod)%mod*inv9%mod;
+		now=now*10%mod;
+	}
+//	for(int i=1;i<=10;++i) cout<<p[i]<<endl;
+}
+ll dfs(ll x,ll op,ll pre,ll d)
+{
+	if(!x) return p[pre];
+	if(!op&&dp[x][pre]!=-1) return dp[x][pre];
+	ll tot=0;
+	ll lim=op?a[x]:9;
+	for(int i=0;i<=lim;++i)
+	{
+		if(i<d) tot=(tot+dfs(x-1,op&&i==lim,pre,d))%mod;
+		else tot=(tot+dfs(x-1,op&&i==lim,pre+1,d))%mod;
+	}
+	if(!op) dp[x][pre]=tot;
+	return tot;
+}
+ll f(string s)
+{
+	cnt=0;
+	int len=s.size();
+	for(int i=len-1;i>=0;--i)
+	{
+		a[++cnt]=s[i]-'0';
+	}
+	ll ans=0;
+	for(int i=1;i<=9;++i)
+	{
+		memset(dp,-1,sizeof dp);
+		ans=(ans+dfs(cnt,1,0,i))%mod;
+	}
+	return ans;
+}
+void solve()
+{
+	init();
+	cin>>n;
+	cout<<f(n)<<endl;
 }
 int main()
-{ios::sync_with_stdio(false);cin.tie(0);cout.tie(0);
-	while(cin>>n)
-	{
-		for(int i=1;i<=n;++i) cin>>mas[i];
-		for(int i=1+n;i<=n+n;++i) mas[i]=mas[i-n];
-	//	for(int i=1;i<=n;++i) cout<<mas[i]<<' ';
-	//	cout<<endl;
-		for(int i=1;i<=n+n;++i) sum[i]=sum[i-1]+mas[i];
-		memset(dp,0x3f,sizeof dp);
-		for(int i=0;i<=n+n;++i) dp[i][i]=0,s[i][i]=i;
-		for(int len=2;len<=n;len++){
-	            for(int i=1;i<=2*n-len+1;i++){
-	                int j=i+len-1;
-	                for(int k=s[i][j-1];k<=s[i+1][j];k++){
-	                    if(dp[i][j]>dp[i][k]+dp[k+1][j]+sum[j]-sum[i-1]){
-	                        dp[i][j]=dp[i][k]+dp[k+1][j]+sum[j]-sum[i-1];
-	                        s[i][j]=k;
-	                    }
-	                }
-	            }
-	        }
-		ll ans=1e17;
-		for(int l=1;l<=n;++l)
-		{
-			ans=min(ans,dp[l][l+n-1]);
-		}
-		cout<<ans<<endl;
-	}
+{
+	ios::sync_with_stdio(0);cin.tie(0);cout.tie(0);
+	solve();
 	return 0;
-} 
+}
 ```
+
+
 
 ## 序列自动机
 
