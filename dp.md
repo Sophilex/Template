@@ -26,13 +26,13 @@ $f(i,y)=a_i*b_y+c_y\leq f(i,x)=a_i*b_x+c_x$
 
 放到二维坐标系下考虑，就是$(b_x,c_x),(b_y,c_y)$两个点的连线的斜率$\leq -a_i$
 
-<img src="C:\Users\26463\AppData\Roaming\Typora\typora-user-images\image-20230901175709520.png" alt="image-20230901175709520" style="zoom:100%;" />
+<img src="Pic\Convex Hull Optimisation\P1.png" alt="image-20230901175709520" style="zoom:100%;" />
 
 换句话说，这里如果x是y之前的比较优的一个点，在y出现之后它就被淘汰了，判断的条件我们记为$k_{xy}<=K(X)$,其中$K(X)=-a_i$。
 
 接着我们将考虑的点数扩大到三个点$x\leq y \leq z$,这里我们不妨先限定$K_{yz}\leq K_{xy}$
 
-<img src="C:\Users\26463\AppData\Roaming\Typora\typora-user-images\image-20230901180601754.png" alt="image-20230901180601754" style="zoom:80%;" />
+<img src="Pic\Convex Hull Optimisation\P2.png" alt="image-20230901175709520" style="zoom:100%;" />
 
 边界条件还是$K(X)=-a_i$
 
@@ -50,7 +50,7 @@ $f(i,y)=a_i*b_y+c_y\leq f(i,x)=a_i*b_x+c_x$
 
 那么我们对于一个固定的点i，将所有能进行决策的点进行这样一个预处理过程的话（大部分情况下对于固定的点i，我们只能够在$[1,i-1]$内决策，这里直接取该情况，其它情况其实同理），$\forall 1\leq x<y<z< i$,若$K_{yz}\leq K_{x,y}$,则将点y删除（因为它永远不会成为一个最优）,那么将留下来的点两两按横坐标顺序前后链接，斜率是**单调不降的**，换句话说，留下来的点就形成了一个**下凸包**，如下图所示，其中绿色连接部分就是一个凸包，红色点是在处理过程中被删除的点
 
-<img src="C:\Users\26463\AppData\Roaming\Typora\typora-user-images\image-20230901184541070.png" alt="image-20230901184541070" style="zoom:40%;" />
+<img src="Pic\Convex Hull Optimisation\P3.png" alt="image-20230901175709520" style="zoom:100%;" />
 
 #### 最优决策点的快速寻找
 
@@ -77,7 +77,7 @@ $K_1<K_2<...<K_s\leq K(X)<K_{s+1}...K_{m}$
 
 对步骤C的解释：这里将i直接加入凸包的话，有可能我们维护的就不再是一个凸包了，如下图情况
 
-<img src="C:\Users\26463\AppData\Roaming\Typora\typora-user-images\image-20230901193403765.png" alt="image-20230901193403765" style="zoom:50%;" />
+<img src="Pic\Convex Hull Optimisation\P4.png" alt="image-20230901175709520" style="zoom:100%;" />
 
 不难发现，此时$x,y,i$三点形成的就是之前讨论过的三个点的情形，所以y是一定不会成为最优决策点的。同理，踢掉y之后，如果$z,x,i$也是一个情况的话，x也会被踢掉，直到最后不再有这样的点为止
 
@@ -103,7 +103,7 @@ $K_1<K_2<...<K_s\leq K(X)<K_{s+1}...K_{m}$
 
 > 同时我们注意到，如果$K(X)$是单调的，其自然满足决策点的单调性。（在横坐标单调的前提下）
 
-<img src="C:\Users\26463\AppData\Roaming\Typora\typora-user-images\image-20230901213045284.png" alt="image-20230901213045284" style="zoom:50%;" />
+<img src="Pic\Convex Hull Optimisation\P5.png" alt="image-20230901175709520" style="zoom:100%;" />
 
 #### 类型总结（单调队列维护凸包）
 
@@ -740,7 +740,7 @@ $dp_i=min_{0\leq j<i}\{dp_j+|s_i-s_j-1-L|^P\}$,其中$s_i=i+\sum_{k=1}^{i}a_k$,$
 
 决策单调性意味着决策点是单调的，换句话说，每一个点能够作为最优决策点的范围是一段连续区间
 
-<img src="C:\Users\26463\AppData\Roaming\Typora\typora-user-images\image-20230904213607082.png" alt="image-20230904213607082" style="zoom:50%;" />
+<img src="Pic\Dp Optimization\monotonicity3.png" alt="image-20230904215014871" style="zoom:100%;" />
 
 在绿色区间内的点都是被$dp_{j_1}$更新，在黄色区间内的点都是被$dp_{j_2}$更新，不会出现黄色区间内有某个点是被$dp_{j_1}$更新的情况，否则就违背了决策单调性的定义
 
@@ -759,9 +759,9 @@ $dp_i=min_{0\leq j<i}\{dp_j+|s_i-s_j-1-L|^P\}$,其中$s_i=i+\sum_{k=1}^{i}a_k$,$
 
 以下分别是不满足对应条件的反例
 
-<img src="C:\Users\26463\AppData\Roaming\Typora\typora-user-images\image-20230904215014871.png" alt="image-20230904215014871" style="zoom:50%;" />
+<img src="Pic\Dp Optimization\monotonicity1.png" alt="image-20230904215014871" style="zoom:100%;" />
 
-<img src="C:\Users\26463\AppData\Roaming\Typora\typora-user-images\image-20230904215346802.png" alt="image-20230904215346802" style="zoom:50%;" />
+<img src="Pic\Dp Optimization\monotonicity2.png" alt="image-20230904215014871" style="zoom:100%;" />
 
 这两个条件不一定充分，只是感觉上可能也够了
 
@@ -1595,7 +1595,7 @@ signed main()
 
 [这篇博客](https://blog.csdn.net/Emm_Titan/article/details/124035796?spm=1001.2014.3001.5502)讲的很清晰，我可能讲的有点抽象，可以去再看看
 
-<img src="C:\Users\26463\AppData\Roaming\Typora\typora-user-images\image-20230916171500911.png" alt="image-20230916171500911" style="zoom:50%;" />
+<img src="Pic\Dp Optimization\wqs5.png" alt="image-20230916171500911" style="zoom:100%;" />
 
 ##### 满足四边形不等式的序列划分问题的答案凸性以及WQS二分的方案构造
 
@@ -1633,7 +1633,7 @@ signed main()
 
 由上，我们只要证明存在这样的一个$i$即可。
 
-![image-20230916142205317](C:\Users\26463\AppData\Roaming\Typora\typora-user-images\image-20230916142205317.png)
+![image-20230916142205317](Pic\Dp Optimization\wqs4.png)
 
 不妨记路径P将$(1,n]$分成了s个部分，其中第i个部分是$(p_i,p_{i+1}]$
 
@@ -1675,15 +1675,15 @@ WQS二分中有时候会存在要求为k，但是$k>l,k<r$且$l,r,k$在一条线
 
 不管是这样的
 
-<img src="C:\Users\26463\AppData\Roaming\Typora\typora-user-images\image-20230916170032830.png" alt="image-20230916170032830" style="zoom:50%;" />
+<img src="Pic\Dp Optimization\wqs1.png" alt="image-20230916170032830" style="zoom:60%;" />
 
 还是这样的
 
-<img src="C:\Users\26463\AppData\Roaming\Typora\typora-user-images\image-20230916170003304.png" alt="image-20230916170003304" style="zoom:50%;" />
+<img src="Pic\Dp Optimization\wqs2.png" alt="image-20230916170003304" style="zoom:60%;" />
 
 只要边界范围足够就不会有问题。但是有一类分段问题，图像长这样
 
-<img src="C:\Users\26463\AppData\Roaming\Typora\typora-user-images\image-20230916170405876.png" alt="image-20230916170405876" style="zoom:70%;" />
+<img src="Pic\Dp Optimization\wqs3.png" alt="image-20230916170405876" style="zoom:70%;" />
 
 分段为0的时候，总价值为0，然后开始分段之后价值随分段减少。不考虑0的话，后面的一段也是满足凸函数的，那么这个对我们的边界会有影响吗？个人感觉没有，因为我们只要保证wqs二分之后在做最优决策的时候保证不让段数为0即可
 
@@ -2134,6 +2134,482 @@ int main()
 [CF802 O] (https://www.luogu.com.cn/problem/CF802O) Wqs二分+反悔贪心
 
 
+
+## 插入dp
+
+感觉还是一种比较套路的东西，但是见的也比较少，浅浅记录一下
+
+### 原型
+
+给定一个长度为$n-1$的字符串，由$<,>$组成，问满足大小关系的n的排列的方案数
+
+设$dp_{i,j}$表示前i个数（1到i），第i个数是j的合法方案数
+
+如果第i个数前面的符号是$<$：
+
+$dp_{i,1}=0$
+
+$dp_{i,2}=dp_{i-1,1}$
+
+$dp_{i,3}=dp_{i-1,1}+dp_{i-1,2}$
+
+......
+
+得到$dp_{i,j}=\sum_{k=1}^{j-1}dp_{i-1,k}$
+
+
+
+如果第i个数前面的符号是$>$：
+
+$dp_{i,i}=0$
+
+$dp_{i,i-1}=dp_{i-1,i-1}$
+
+$dp_{i,i-2}=dp_{i-1,i-1}+dp_{i-1,i-2}$
+
+...
+
+得到$dp_{i,j}=\sum_{k=j}^{i-1}dp_{i-1,k}$
+
+前缀和优化后是$n^2$复杂度
+
+```c++
+void solve()
+{
+    cin>>n;
+    cin>>s;
+    s=" "+s;
+    dp[1][1]=1;
+    pre[1][1]=1;
+    for(int i=2;i<=n;++i)
+    {
+        if(s[i-1]=='<')
+        {
+            for(int j=2;j<=i;++j) dp[i][j]=pre[i-1][j-1];
+        }
+        else
+        {
+            for(int j=i-1;j>=1;--j) dp[i][j]=((pre[i-1][i-1]-pre[i-1][j-1])%mod+mod)%mod;
+        }
+
+        for(int j=1;j<=i;++j) pre[i][j]=(pre[i][j-1]+dp[i][j])%mod;
+    }
+    ll ans=0;
+    for(int i=1;i<=n;++i) ans=(ans+dp[n][i])%mod;
+        cout<<ans<<endl;
+
+}
+```
+
+
+
+[ABC209F]([[ABC209F\] Deforestation - 洛谷 | 计算机科学教育新生态 (luogu.com.cn)](https://www.luogu.com.cn/problem/AT_abc209_f))
+
+大意：
+n棵树，每一个树的高度为$h_i$,每砍去一棵树，其$h_i$变成0，花费$h_{i-1}+h_i+h_{i+1}$,问有多少种方案使得砍去所有树的总花费最小
+
+不难发现砍树的顺序其实就是一个长度为n的排列。
+
+观察一种特殊情形，对于$h_i>h_{i+1}$,我们一定是先砍高的比较好，这样总花费就是$2h_{i+1}+h_i$,否则就是$2h_{i}+h_{i+1}$.该结论对于$h_i<h_{i+1}$同理。那么稍微复杂一点，$h_i>h_{i+1}>h_{i+2}$,这个显然也是同理，从花费高的贪心开始砍总没有错。那么$h_i>h_{i+1}<h_{i+2}$呢？如果我们先砍两边，总花费是$h_i+h_{i+2}+2h_{i+1}$，可以证明它是最小的。所以我们就得到了一个与上一问类似的关系序列，那么自然也就可以套板子了
+
+其中$h_i<h_{i+1}$意味着排列a中$a_i>a_{i+1}$
+
+$h_i<h_{i+1}$意味着$a_i<a_{i+1}$
+
+$h_i=h_{i+1}$则表示两者没有限制，dp时直接全部继承即可
+
+```c++
+void solve()
+{
+    cin>>n;
+    for(int i=1;i<=n;++i) cin>>mas[i];
+    dp[1][1]=1;
+    pre[1][1]=1;
+    for(int i=2;i<=n;++i)
+    {
+        if(mas[i]>mas[i-1])
+        {
+            for(int j=i-1;j>=1;--j) dp[i][j]=((pre[i-1][i-1]-pre[i-1][j-1])%mod+mod)%mod;
+        }
+        if(mas[i]<mas[i-1])
+        {
+            for(int j=2;j<=i;++j) dp[i][j]=pre[i-1][j-1];
+        }
+        if(mas[i]==mas[i-1])
+        {
+            for(int j=1;j<=i;++j) dp[i][j]=pre[i-1][i-1];
+        }
+        for(int j=1;j<=i;++j) pre[i][j]=(pre[i][j-1]+dp[i][j])%mod;
+    }
+    ll ans=0;
+    for(int i=1;i<=n;++i) ans=(ans+dp[n][i])%mod;
+        cout<<ans<<endl;
+}
+```
+
+
+
+
+
+## 数位dp
+
+[数位dp](https://so.csdn.net/so/search?q=数位dp&spm=1001.2101.3001.7020)基本上是处理位数相关的问题，不过也不一定
+
+大部分题目存在一定套路，但是有一些也不好想
+
+其dp状态的设置大致是由枚举的位数，以及每一位的状态（是否前导0，是否顶到上界），以及一些依题目而定的性质
+
+时间复杂度基本上就是dp枚举的状态数
+
+例子：
+
+大意：给出两个数a,b，求出[a,b]中各位数字之和能整除原数的数的个数，a,b<=1e18
+
+思路：
+
+考虑dp状态dp[i][j][k]表示枚举到前i位，前i位数字的和是j，前i位组成的数字是k，这是一个比较niave的想法，但是数据范围不支持我们这样处理第三维。考虑到最后只要求整除，所以可以考虑用k%j来代替k。但是这样还涉及到一个问题，就是如果j是不断变化的，就很难实现状态转移。所以我们可以在外层枚举j，然后dfs的时候就保持j不变就好了
+
+由于这里是考虑每一位数字的和，所以我们不用考虑前导0的问题
+
+```c++
+ll a[20];
+ll cnt=0;
+ll dp[20][200][200];
+ll dfs(ll x,ll sum,ll rel,ll op)
+{
+	if(x==0) return sum==0&&rel==0;
+	if(!op&&dp[x][rel][sum]!=-1) return dp[x][rel][sum]; 
+	ll lim=op?a[x]:9;
+	ll tot=0;
+	for(int i=0;i<=lim&&i<=sum;++i)
+	{	
+		tot+=dfs(x-1,sum-i,(rel*10%mod+i)%mod,op&&i==lim);	
+	}
+	if(!op) dp[x][rel][sum]=tot;
+	return tot;
+}
+ll f(ll x)
+{
+	cnt=0;
+	while(x)
+	{
+		a[++cnt]=x%10;
+		x/=10;
+	}
+	ll det=0;
+	for(int i=1;i<=9*cnt;++i)
+	{
+		mod=i;
+		memset(dp,-1,sizeof dp);
+		det+=dfs(cnt,i,0,1);
+	}
+	return det;
+}
+```
+
+大意：
+
+给定K,L,R，求L~R之间最多不包含超过K种数码的数的和。K<=10，L,R<=1e18
+
+思路：
+如果只是求满足条件的数字的个数的话就是上面提到的板子题了，这里要求和，我们同样可以考虑对相同状态进行合并求和。f[i][j]表示当前枚举到第i位，出现过的数码种类的状态为j，也就是我们要求的答案数组。g[i][j]表示当前枚举到第i位，出出现过的数码种类的状态为j的合法数字个数，也就是板子。考虑如何用g来推f。这里j可以10位二进制状压，我们每往下走一位，如果我们枚举第i位上填的数字是t，用j'表示下一位的数码种类数
+
+$g_{i,j}=\sum g_{i-1,j'},f_{i,j}=\sum 10^itg_{i-1,j'}+f_{i-1,j'}$
+
+f是数字的和，g是合法数字的个数
+
+有了这个之后，我们就直接推就可以了。然后因为需要下一个状态的f和g，所以我们dfs要返回两个值
+
+```c++
+ll a[20];
+ll cnt=0;
+pii dp[40][1030];
+ll p[40];
+void init()
+{
+	p[0]=1;
+	for(int i=1;i<=20;++i) p[i]=p[i-1]*10ll%mod;
+}
+bool check(ll x)
+{
+	ll cn=0;
+	while(x)
+	{
+		cn+=(x%2);
+		x/=2;
+	}
+	return cn<=k;
+}
+pii dfs(ll x,ll sum,ll head,ll op)
+{
+	if(x==0) return mk(0,1);
+	if(!op&&!head&&dp[x][sum]!=mk(-1ll,-1ll)) return dp[x][sum];
+	ll lim=op?a[x]:9;
+	ll s1=0,s2=0;
+	for(ll i=0;i<=lim;++i)
+	{
+		//f是数字的和，g是合法数字的个数
+		pii gt=mk(0,0);
+		if(head&&i==0) gt=dfs(x-1,0,1,op&&i==lim);
+		else if(check(sum|(1<<i))) gt=dfs(x-1,sum|(1<<i),0,op&&i==lim);
+		s1=(((s1+i*p[x-1]%mod*gt.second%mod)%mod)+gt.first)%mod;	
+		s2=(s2+gt.second)%mod;
+	} 
+	if(!op&&!head) dp[x][sum]=mk(s1,s2);
+	return mk(s1,s2);
+}
+ll f(ll x)
+{
+	cnt=0;
+	while(x)
+	{
+		a[++cnt]=x%10;
+		x/=10;
+	}
+	return dfs(cnt,0,1,1).first;
+}
+void solve()
+{
+	init();
+	for(int i=0;i<=20;++i)
+	{
+		for(int j=0;j<=1025;++j)
+		{
+			dp[i][j]=mk(-1ll,-1ll);
+		}
+	}
+	cin>>n>>m>>k;
+	cout<<((f(m)-f(n-1))%mod+mod)%mod<<endl;
+}
+```
+
+最后再提一嘴，有些时候会遇到题目说每一个数字是按位排序过的，也就是同一个数字内数位升序排列，然后要求处理相关问题。比如CF908G New Year and Original Order，[SDOI2010]代码拍卖会，这种题有一个不常见但是很关键的套路，就是将每一个数字拆分成若干个由1组成的数字的和，这个性质是由其数位升序带来的，做题的时候要留一个心眼。
+
+---
+
+大意：
+一个数字是好的，当且仅当对于x的每一个非0位的数字y，y|x
+
+问区间美丽数字的个数
+
+思路：
+
+ 我们很难在枚举的过程中将dp状态设置为与x模2-9的值都有关，因为这样不好合并相同状态。
+
+这里有两个小结论
+
+* 1.两个整数a,b满足a|x,b|x的充要条件是lcm(a,b)|x
+
+  Proof：
+
+  ->:由a|x,b|x知，x=m*a=n*b，则我们有a|(n*b)，若(a,b)=1,则由上述结论我们有a|n,故x=n*b=(k*a)*b=k*lcm(a,b),即lcm(a,b)|x     ----------1*
+
+  若(a,b)=d,则d*(a/d)=n*d*(b/d),即(a/d)=n*(b/d)，其中(a/d,b/d)=1，转为推导1故该方向得证
+
+  <-:显然
+
+  **推广一下就是：若干个数ai都整除x的充要条件是lcm{ai}|x**
+
+* 2.考虑n个数a1,a2...an,记其LCM为L，则x%ai=(x%L)%ai
+
+证明显然 
+
+有了上述性质，我们不难发现，可以用x%2520(1-9的最小公倍数)来代替x的值，那么首先值域就已经大大简化了。然后由性质1，我们只需要维护出现过数字的lcm即可，最后的判断条件就是前缀%2520的值%lcm=0
+
+那么我们记录dpi,j,k表示前i位，前缀模2520的值为j，前i位中非0位的lcm为k，就可以dp了。但是空间有点大，考虑优化。
+
+不难发现，第三维其实并没有很多数字，2-9中任意若干个数字的lcm一定是2520的因数，而2520的因数总共只有48个，就大大简化了空间，并且我们可以预处理
+
+```c++
+ll a[22];
+ll cnt=0;
+int mp[2522];
+ll dp[22][2522][52];
+int Gt[2522][2522];
+ll cm(ll x,ll y)
+{
+	if(x==0||y==0) return x|y;
+	ll Gcd=__gcd(x,y);
+	if(x>=y) swap(x,y);
+	if(Gt[x][y]) return Gt[x][y]; 
+	return Gt[x][y]=x*y/Gcd;
+}
+ll dfs(ll x,ll op,ll mo,ll Lcm)
+{
+	if(x==0) return mo%Lcm==0;
+	if(!op&&dp[x][mo][mp[Lcm]]!=-1) return dp[x][mo][mp[Lcm]];
+	ll tot=0;
+	ll lim=op?a[x]:9;
+	for(int i=0;i<=lim;++i)
+	{
+		if(i==0) tot+=dfs(x-1,op&&i==lim,mo*10%mod,Lcm);
+		else tot+=dfs(x-1,op&&i==lim,(mo*10%mod+i)%mod,cm(Lcm,i));
+	}
+	if(!op) dp[x][mo][mp[Lcm]]=tot;
+	return tot;
+	
+}
+void init()
+{
+	ll cn=0;
+	for(int i=1;i<=2520;++i)
+	{
+		if(2520%i) continue;
+		mp[i]=++cn;
+	}
+//	cout<<cn<<endl;
+}
+ll f(ll x)
+{
+	cnt=0;
+	while(x)
+	{
+		a[++cnt]=x%10;
+		x/=10;
+	}
+	return dfs(cnt,1,0,1);
+}
+```
+
+[CF908G](https://blog.csdn.net/sophilex/article/details/131385426?spm=1001.2014.3001.5502)
+
+求区间[L,R]内每一个数字在各数位排序后得到的数的和，答案对1e9+7取模
+
+n<=1e700
+
+思路：
+
+这道题唯一的性质就是每一个数字的各个数位是升序排列的，然后我们可以发现这么一个结论：
+
+每一个数字都可以被**最多9个由1组成的数**累加得到
+
+举个例子,23349,可以按照如下方式拆分
+
+<img src="Pic\cf908G.png" alt="image-20230917100803071" style="zoom:50%;" />
+
+最多只有9个是因为每一位最大只有9。然后我们看一下每一行的1的个数，其实也不难发现，第i行的1的个数=大于等于i的数字的个数，手模一下就可以验证了。
+
+所以在第d行，计数字x中>=d的数字的个数为k，则x在第d行的贡献就是(10^k-1)/9(其实就是在构造k个1)
+
+在此基础上，我们分9次来计算每一行的贡献。对于第d行，设dpi,j表示前i位，有j位>=d,直接做数位dp即可
+
+所以此题的关键就是用1来组成数字，剩余的工作就都是很基础的了。不好想，只能说留个印象。
+
+```c++
+#include<bits/stdc++.h>
+using namespace std;
+#define ll long long
+#define endl '\n'
+const ll N=1e5+10;
+const ll mod=1e9+7;
+string n;
+ll a[710];
+ll cnt=0;
+ll dp[710][710]; 
+ll p[710];
+ll inv9;
+ll ksm(ll x,ll y)
+{
+	ll ans=1;
+	while(y)
+	{
+		if(y&1) ans=ans*x%mod;
+		x=x*x%mod;
+		y>>=1;
+	}
+	return ans;
+}
+ll inv(ll x)
+{
+	return ksm(x,mod-2);
+}
+void init()
+{
+	inv9=inv(9); 
+	ll now=1;
+	for(int i=1;i<=710;++i)
+	{
+		p[i]=((now*10%mod)-1+mod)%mod*inv9%mod;
+		now=now*10%mod;
+	}
+//	for(int i=1;i<=10;++i) cout<<p[i]<<endl;
+}
+ll dfs(ll x,ll op,ll pre,ll d)
+{
+	if(!x) return p[pre];
+	if(!op&&dp[x][pre]!=-1) return dp[x][pre];
+	ll tot=0;
+	ll lim=op?a[x]:9;
+	for(int i=0;i<=lim;++i)
+	{
+		if(i<d) tot=(tot+dfs(x-1,op&&i==lim,pre,d))%mod;
+		else tot=(tot+dfs(x-1,op&&i==lim,pre+1,d))%mod;
+	}
+	if(!op) dp[x][pre]=tot;
+	return tot;
+}
+ll f(string s)
+{
+	cnt=0;
+	int len=s.size();
+	for(int i=len-1;i>=0;--i)
+	{
+		a[++cnt]=s[i]-'0';
+	}
+	ll ans=0;
+	for(int i=1;i<=9;++i)
+	{
+		memset(dp,-1,sizeof dp);
+		ans=(ans+dfs(cnt,1,0,i))%mod;
+	}
+	return ans;
+}
+void solve()
+{
+	init();
+	cin>>n;
+	cout<<f(n)<<endl;
+}
+int main()
+{
+	ios::sync_with_stdio(0);cin.tie(0);cout.tie(0);
+	solve();
+	return 0;
+}
+```
+
+
+
+## 序列自动机
+
+```c++
+
+ll ne[N][30];
+void init()
+{
+	ll len=strlen(s+1);
+	for(int i=len;i;--i)
+	{
+		for(int j=0;j<26;++j) ne[i-1][j]=ne[i][j];
+	    ne[i-1][s[i]-'a']=i;
+	}
+}
+void solve()
+{//判断是否为子序列
+	cin>>(ss+1);
+	ll p=0;
+	for(int i=1;i<=strlen(ss+1);++i)
+	{
+		p=ne[p][ss[i]-'a'];
+		if(!p)
+		{
+			cout<<"No"<<endl;
+			return;
+		}
+	}
+	cout<<"Yes"<<endl;
+}
+```
 
 
 

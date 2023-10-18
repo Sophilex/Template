@@ -2002,13 +2002,13 @@ for(int i=1;i<=totprime;++i)
 思路：
 一个显然的小贪心：如果一开始的gcd是x的话，我们一定要尽可能多的保留gcd为x，因为后面的gcd不会大于x。要做到这一点，我们需要统计有多少个数字是x的倍数
 
-换句话说，我们需要统计cnt【i】，表示有多少个数字是i的倍数，这其实就是一个狄利克雷后缀和
+换句话说，我们需要统计$cnt_i$，表示有多少个数字是i的倍数，这其实就是一个狄利克雷后缀和
 
-这里还有一个性质：cnt【j】一定不大于cnt【i】（j|i），这一点显然
+这里还有一个性质：$cnt_i$一定不大于$cnt_i$（j|i），这一点显然
 
-那么我们如果以i作为一开始的gcd的话，会保留cnt【i】个前缀gcd为i的长度，如果以j作为一开始的gcd的话，会保留cnt【j】个前缀gcd为j的长度，这个长度肯定是不大于上一个的，所以我们可以从i转移到j，
+那么我们如果以i作为一开始的gcd的话，会保留$cnt_i$个前缀gcd为i的长度，如果以j作为一开始的gcd的话，会保留$cnt_j$个前缀gcd为j的长度，这个长度肯定是不大于上一个的，所以我们可以从i转移到j，
 
-设dp【i】表示一开始的gcd为i的情况下数组的最大价值
+设$dp_i$表示一开始的gcd为i的情况下数组的最大价值
 
 dp[j]=max(dp[j],1ll*cnt[j]*(j-i)+dp[i]);
 
@@ -2018,7 +2018,7 @@ dp[j]=max(dp[j],1ll*cnt[j]*(j-i)+dp[i]);
 
 code
 
-```
+```c++
 ll n,a;
 ll cn=0;
 ll cnt[N+10];
@@ -2074,7 +2074,7 @@ void solve()
 
 ## 可持久化Trie
 
-```
+```c++
 const ll N=6e5+10;
 ll idx=0;
 ll tr[N*25][3];
@@ -2142,7 +2142,7 @@ void solve()
 
 ## 模拟退火
 
-```
+```c++
 #include<bits/stdc++.h>
 using namespace std;
 #define ll long long
@@ -2212,157 +2212,6 @@ void solve()
 	answ=energy(ansx,ansy);
 	gt();
 	cout<<fixed<<setprecision(3)<<ansx<<" "<<ansy<<endl;
-}
-```
-
-分治FFT
-
-```
-#include<bits/stdc++.h>
-using namespace std;
-#define ll long long
-#define IL inline
-#define ull unsigned long long
-#define clr(f,n) memset(f,0,sizeof(int)*(n))
-#define cpy(f,g,n) memcpy(f,g,sizeof(int)*(n))
-const int _G=3,mod=998244353,Maxn=1e5+10;
-namespace FastIOT{
-	const int bsz=1<<18;
-	char bf[bsz],*hed,*tail;
-	inline char gc(){if(hed==tail)tail=(hed=bf)+fread(bf,1,bsz,stdin);if(hed==tail)return 0;return *hed++;}
-	template<typename T>IL void read(T &x){T f=1;x=0;char c=gc();for(;c>'9'||c<'0';c=gc())if(c=='-')f=-1;
-	for(;c<='9'&&c>='0';c=gc())x=(x<<3)+(x<<1)+(c^48);x*=f;}
-	template<typename T>IL void print(T x){if(x<0)putchar(45),x=-x;if(x>9)print(x/10);putchar(x%10+48);}
-	template<typename T>IL void println(T x){print(x);putchar('\n');}
-}
-using namespace FastIOT;
-int F[Maxn<<1],G[Maxn<<1],n,m;
-ll powM(ll a,ll t=mod-2)
-{
-    ll ans=1;
-    while(t)
-    {
-    	if(t&1)ans=ans*a%mod;
-    	a=a*a%mod;t>>=1;
-    }
-	return ans;
-}
-const int invG=powM(_G);
-int tr[Maxn<<1],tf;
-void tpre(int n)
-{
-  	if (tf==n)return ;tf=n;
-  	for(int i=0;i<n;i++)
-    tr[i]=(tr[i>>1]>>1)|((i&1)?n>>1:0);
-}
-void NTT(int *g,bool op,int n)
-{
-    tpre(n);
-    static ull f[Maxn<<1],w[Maxn<<1]={1};
-    for (int i=0;i<n;i++)f[i]=(((ll)mod<<5)+g[tr[i]])%mod;
-    for(int l=1;l<n;l<<=1)
-    {
-    	ull tG=powM(op?_G:invG,(mod-1)/(l+l));
-    	for (int i=1;i<l;i++)w[i]=w[i-1]*tG%mod;
-    	for(int k=0;k<n;k+=l+l)
-        for(int p=0;p<l;p++)
-	    {
-	        int tt=w[p]*f[k|l|p]%mod;
-	        f[k|l|p]=f[k|p]+mod-tt;
-	        f[k|p]+=tt;
-        }      
-    	if (l==(1<<10)) for (int i=0;i<n;i++)f[i]%=mod;
-    }
-    if (!op)
-    {
-    	ull invn=powM(n);
-    	for(int i=0;i<n;++i)
-        g[i]=f[i]%mod*invn%mod;
-    }
-    else for(int i=0;i<n;++i)g[i]=f[i]%mod;
-}
-void px(int *f,int *g,int n)
-{for(int i=0;i<n;++i)f[i]=1ll*f[i]*g[i]%mod;}
-void times(int *f,int *g,int len,int lim)
-{
-    static int sav[Maxn<<1];
-    int n=1;for(n;n<len+len;n<<=1);
-    clr(sav,n);cpy(sav,g,n);
-    NTT(f,1,n);NTT(sav,1,n);
-    px(f,sav,n);NTT(f,0,n);
-    clr(f+lim,n-lim);clr(sav,n);
-}
-void invp(int *f,int m)
-{
-  int n;for (n=1;n<m;n<<=1);
-  static int w[Maxn<<1],r[Maxn<<1],sav[Maxn<<1];
-  w[0]=powM(f[0]);
-  for (int len=2;len<=n;len<<=1){
-    for (int i=0;i<(len>>1);i++)r[i]=w[i];
-    cpy(sav,f,len);NTT(sav,1,len);
-    NTT(r,1,len);px(r,sav,len);
-    NTT(r,0,len);clr(r,len>>1);
-    cpy(sav,w,len);NTT(sav,1,len);
-    NTT(r,1,len);px(r,sav,len);
-    NTT(r,0,len);
-    for (int i=len>>1;i<len;i++)
-      w[i]=(w[i]*2ll-r[i]+mod)%mod;
-  }cpy(f,w,m);clr(sav,n);clr(w,n);clr(r,n);
-}
-void sqrtp(int *f,int m)
-{
-  int n;for (n=1;n<m;n<<=1);
-  static int b1[Maxn<<1],b2[Maxn<<1];
-  b1[0]=1;
-  for (int len=2;len<=n;len<<=1){
-    for (int i=0;i<(len>>1);i++)b2[i]=(b1[i]<<1)%mod;
-    invp(b2,len);
-    NTT(b1,1,len);px(b1,b1,len);NTT(b1,0,len);
-    for (int i=0;i<len;i++)b1[i]=(f[i]+b1[i])%mod;
-    times(b1,b2,len,len);
-  }cpy(f,b1,m);clr(b1,n+n);clr(b2,n+n);
-}
-void dao(int *f,int m){//求导 
-  for (int i=1;i<m;i++)
-    f[i-1]=1ll*f[i]*i%mod;
-  f[m-1]=0;
-}
-int inv[Maxn];
-void Init(int lim){
-  inv[1]=1;
-  for (int i=2;i<=lim;i++)
-    inv[i]=1ll*inv[mod%i]*(mod-mod/i)%mod;
-}
-void jifen(int *f,int m){//积分 
-  for (int i=m;i;i--)
-    f[i]=1ll*f[i-1]*inv[i]%mod;
-  f[0]=0;
-}
-void lnp(int *f,int m)//多项式ln 
-{
-  static int g[Maxn<<1];
-  cpy(g,f,m);
-  invp(g,m);dao(f,m);
-  times(f,g,m,m);
-  jifen(f,m-1);
-  clr(g,m);
-}
-void solve()
-{
-	read(n); 
-	for(int i=1;i<n;++i) read(G[i]);
-	G[0]=1;
-	for(int i=1;i<n;++i) G[i]*=-1;
-	invp(G,n);
-	//times(F,G,max(n,m),n+m+1);
-	for(int i=0;i<n;++i) printf("%d ",G[i]);
-	
-}
-int main()
-{
-	//ios::sync_with_stdio(false);cin.tie(0);cout.tie(0);
-	solve();
-	return 0;
 }
 ```
 
@@ -2653,7 +2502,7 @@ $x=a_2+k_2*m_2$
 
 code
 
-```
+```c++
 //excrt模板题 
 #include<bits/stdc++.h>
 using namespace std;
@@ -2713,7 +2562,7 @@ int main()
 
 ## Lucas定理
 
-```
+```c++
 ll work(ll n, ll m) {//Lucas 定理
 	if (!n) return 1;
 	return (work(n / p, m / p) * C(n % p, m % p)) % p;
@@ -2754,9 +2603,9 @@ $\sum_{i=0}^{m}\binom{n}{i}\binom{m}{i}=\binom{n+m}{m}$
 
 * 相同小球，不同盒子
 
-  有空盒:$\frac{n+m-1}{n}$
+  有空盒:$\binom{n+m-1}{n}$
 
-  无空盒:$\frac{n-1}{m-1}$
+  无空盒:$\binom{n-1}{m-1}$
 
 * 相同小球，相同盒子：
 
@@ -2898,6 +2747,35 @@ void f(int n) {
 则$\hat{B}(x)=exp(e^x-1)$
 
 预处理出$e^x-1$的前n项之后做一次多项式$exp$即可得出贝尔数的前n项，时间复杂度瓶颈在于多项式exp，可以做到$O(nlog)$
+
+### 费马数
+
+$f_n=2^{2^n}+1,n\geq 0$
+
+#### 公式
+
+$f_n=f_0f_1...f_{n-1}+2$  证明的话直接取$f_n-2$递推即可
+
+$f_n=(f_{n-1}-1)^2+1$
+
+$f_n=f_{n-1}^2-2(f_{n-2}-1)^2$
+
+$f_n=f_{n-1}+2^{2^{n-1}}f_0f_1...f_{n-2}$
+
+#### 性质
+
+任意两个费马数互质
+
+除了$f_0$和$f_1$，费马数的最后一位是7
+
+#### 前几项
+
+| *F*0 | =    | 2^1  | +    | 1    | =    | [3](https://zh.wikipedia.org/wiki/3)                         |      |
+| ---- | ---- | ---- | ---- | ---- | ---- | ------------------------------------------------------------ | ---- |
+| *F*1 | =    | 2^2  | +    | 1    | =    | [5](https://zh.wikipedia.org/wiki/5)                         |      |
+| *F*2 | =    | 2^4  | +    | 1    | =    | [17](https://zh.wikipedia.org/wiki/17)                       |      |
+| *F*3 | =    | 2^8  | +    | 1    | =    | [257](https://zh.wikipedia.org/wiki/257)                     |      |
+| *F*4 | =    | 2^16 | +    | 1    | =    | [65,537](https://zh.wikipedia.org/wiki/65537)  以上5个是已知的**费马素数**。 |      |
 
 ## 树与图上的计数问题
 
@@ -3685,367 +3563,6 @@ int main()
 ![image-20230818193926689](C:\Users\acm-673\AppData\Roaming\Typora\typora-user-images\image-20230818193926689.png)
 
 
-
-## 数位dp
-
-[数位dp](https://so.csdn.net/so/search?q=数位dp&spm=1001.2101.3001.7020)基本上是处理位数相关的问题，不过也不一定
-
-大部分题目存在一定套路，但是有一些也不好想
-
-其dp状态的设置大致是由枚举的位数，以及每一位的状态（是否前导0，是否顶到上界），以及一些依题目而定的性质
-
-时间复杂度基本上就是dp枚举的状态数
-
-例子：
-
-大意：给出两个数a,b，求出[a,b]中各位数字之和能整除原数的数的个数，a,b<=1e18
-
-思路：
-
-考虑dp状态dp[i][j][k]表示枚举到前i位，前i位数字的和是j，前i位组成的数字是k，这是一个比较niave的想法，但是数据范围不支持我们这样处理第三维。考虑到最后只要求整除，所以可以考虑用k%j来代替k。但是这样还涉及到一个问题，就是如果j是不断变化的，就很难实现状态转移。所以我们可以在外层枚举j，然后dfs的时候就保持j不变就好了
-
-由于这里是考虑每一位数字的和，所以我们不用考虑前导0的问题
-
-```c++
-ll a[20];
-ll cnt=0;
-ll dp[20][200][200];
-ll dfs(ll x,ll sum,ll rel,ll op)
-{
-	if(x==0) return sum==0&&rel==0;
-	if(!op&&dp[x][rel][sum]!=-1) return dp[x][rel][sum]; 
-	ll lim=op?a[x]:9;
-	ll tot=0;
-	for(int i=0;i<=lim&&i<=sum;++i)
-	{	
-		tot+=dfs(x-1,sum-i,(rel*10%mod+i)%mod,op&&i==lim);	
-	}
-	if(!op) dp[x][rel][sum]=tot;
-	return tot;
-}
-ll f(ll x)
-{
-	cnt=0;
-	while(x)
-	{
-		a[++cnt]=x%10;
-		x/=10;
-	}
-	ll det=0;
-	for(int i=1;i<=9*cnt;++i)
-	{
-		mod=i;
-		memset(dp,-1,sizeof dp);
-		det+=dfs(cnt,i,0,1);
-	}
-	return det;
-}
-```
-
-大意：
-
-给定K,L,R，求L~R之间最多不包含超过K种数码的数的和。K<=10，L,R<=1e18
-
-思路：
-如果只是求满足条件的数字的个数的话就是上面提到的板子题了，这里要求和，我们同样可以考虑对相同状态进行合并求和。f[i][j]表示当前枚举到第i位，出现过的数码种类的状态为j，也就是我们要求的答案数组。g[i][j]表示当前枚举到第i位，出出现过的数码种类的状态为j的合法数字个数，也就是板子。考虑如何用g来推f。这里j可以10位二进制状压，我们每往下走一位，如果我们枚举第i位上填的数字是t，用j'表示下一位的数码种类数
-
-$g_{i,j}=\sum g_{i-1,j'},f_{i,j}=\sum 10^itg_{i-1,j'}+f_{i-1,j'}$
-
-f是数字的和，g是合法数字的个数
-
-有了这个之后，我们就直接推就可以了。然后因为需要下一个状态的f和g，所以我们dfs要返回两个值
-
-```c++
-ll a[20];
-ll cnt=0;
-pii dp[40][1030];
-ll p[40];
-void init()
-{
-	p[0]=1;
-	for(int i=1;i<=20;++i) p[i]=p[i-1]*10ll%mod;
-}
-bool check(ll x)
-{
-	ll cn=0;
-	while(x)
-	{
-		cn+=(x%2);
-		x/=2;
-	}
-	return cn<=k;
-}
-pii dfs(ll x,ll sum,ll head,ll op)
-{
-	if(x==0) return mk(0,1);
-	if(!op&&!head&&dp[x][sum]!=mk(-1ll,-1ll)) return dp[x][sum];
-	ll lim=op?a[x]:9;
-	ll s1=0,s2=0;
-	for(ll i=0;i<=lim;++i)
-	{
-		//f是数字的和，g是合法数字的个数
-		pii gt=mk(0,0);
-		if(head&&i==0) gt=dfs(x-1,0,1,op&&i==lim);
-		else if(check(sum|(1<<i))) gt=dfs(x-1,sum|(1<<i),0,op&&i==lim);
-		s1=(((s1+i*p[x-1]%mod*gt.second%mod)%mod)+gt.first)%mod;	
-		s2=(s2+gt.second)%mod;
-	} 
-	if(!op&&!head) dp[x][sum]=mk(s1,s2);
-	return mk(s1,s2);
-}
-ll f(ll x)
-{
-	cnt=0;
-	while(x)
-	{
-		a[++cnt]=x%10;
-		x/=10;
-	}
-	return dfs(cnt,0,1,1).first;
-}
-void solve()
-{
-	init();
-	for(int i=0;i<=20;++i)
-	{
-		for(int j=0;j<=1025;++j)
-		{
-			dp[i][j]=mk(-1ll,-1ll);
-		}
-	}
-	cin>>n>>m>>k;
-	cout<<((f(m)-f(n-1))%mod+mod)%mod<<endl;
-}
-```
-
-最后再提一嘴，有些时候会遇到题目说每一个数字是按位排序过的，也就是同一个数字内数位升序排列，然后要求处理相关问题。比如CF908G New Year and Original Order，[SDOI2010]代码拍卖会，这种题有一个不常见但是很关键的套路，就是将每一个数字拆分成若干个由1组成的数字的和，这个性质是由其数位升序带来的，做题的时候要留一个心眼。
-
----
-
-大意：
-一个数字是好的，当且仅当对于x的每一个非0位的数字y，y|x
-
-问区间美丽数字的个数
-
-思路：
-
- 我们很难在枚举的过程中将dp状态设置为与x模2-9的值都有关，因为这样不好合并相同状态。
-
-这里有两个小结论
-
-* 1.两个整数a,b满足a|x,b|x的充要条件是lcm(a,b)|x
-
-  Proof：
-
-  ->:由a|x,b|x知，x=m*a=n*b，则我们有a|(n*b)，若(a,b)=1,则由上述结论我们有a|n,故x=n*b=(k*a)*b=k*lcm(a,b),即lcm(a,b)|x     ----------1*
-
-  若(a,b)=d,则d*(a/d)=n*d*(b/d),即(a/d)=n*(b/d)，其中(a/d,b/d)=1，转为推导1故该方向得证
-
-  <-:显然
-
-  **推广一下就是：若干个数ai都整除x的充要条件是lcm{ai}|x**
-
-* 2.考虑n个数a1,a2...an,记其LCM为L，则x%ai=(x%L)%ai
-
-证明显然 
-
-有了上述性质，我们不难发现，可以用x%2520(1-9的最小公倍数)来代替x的值，那么首先值域就已经大大简化了。然后由性质1，我们只需要维护出现过数字的lcm即可，最后的判断条件就是前缀%2520的值%lcm=0
-
-那么我们记录dpi,j,k表示前i位，前缀模2520的值为j，前i位中非0位的lcm为k，就可以dp了。但是空间有点大，考虑优化。
-
-不难发现，第三维其实并没有很多数字，2-9中任意若干个数字的lcm一定是2520的因数，而2520的因数总共只有48个，就大大简化了空间，并且我们可以预处理
-
-```c++
-
-ll a[22];
-ll cnt=0;
-int mp[2522];
-ll dp[22][2522][52];
-int Gt[2522][2522];
-ll cm(ll x,ll y)
-{
-	if(x==0||y==0) return x|y;
-	ll Gcd=__gcd(x,y);
-	if(x>=y) swap(x,y);
-	if(Gt[x][y]) return Gt[x][y]; 
-	return Gt[x][y]=x*y/Gcd;
-}
-ll dfs(ll x,ll op,ll mo,ll Lcm)
-{
-	if(x==0) return mo%Lcm==0;
-	if(!op&&dp[x][mo][mp[Lcm]]!=-1) return dp[x][mo][mp[Lcm]];
-	ll tot=0;
-	ll lim=op?a[x]:9;
-	for(int i=0;i<=lim;++i)
-	{
-		if(i==0) tot+=dfs(x-1,op&&i==lim,mo*10%mod,Lcm);
-		else tot+=dfs(x-1,op&&i==lim,(mo*10%mod+i)%mod,cm(Lcm,i));
-	}
-	if(!op) dp[x][mo][mp[Lcm]]=tot;
-	return tot;
-	
-}
-void init()
-{
-	ll cn=0;
-	for(int i=1;i<=2520;++i)
-	{
-		if(2520%i) continue;
-		mp[i]=++cn;
-	}
-//	cout<<cn<<endl;
-}
-ll f(ll x)
-{
-	cnt=0;
-	while(x)
-	{
-		a[++cnt]=x%10;
-		x/=10;
-	}
-	return dfs(cnt,1,0,1);
-}
-```
-
-[CF908G](https://blog.csdn.net/sophilex/article/details/131385426?spm=1001.2014.3001.5502)
-
-求区间[L,R]内每一个数字在各数位排序后得到的数的和，答案对1e9+7取模
-
-n<=1e700
-
-思路：
-
-这道题唯一的性质就是每一个数字的各个数位是升序排列的，然后我们可以发现这么一个结论：
-
-每一个数字都可以被**最多9个由1组成的数**累加得到
-
-举个例子,23349,可以按照如下方式拆分
-
-<img src="C:\Users\26463\AppData\Roaming\Typora\typora-user-images\image-20230917100803071.png" alt="image-20230917100803071" style="zoom:50%;" />
-
-最多只有9个是因为每一位最大只有9。然后我们看一下每一行的1的个数，其实也不难发现，第i行的1的个数=大于等于i的数字的个数，手模一下就可以验证了。
-
-所以在第d行，计数字x中>=d的数字的个数为k，则x在第d行的贡献就是(10^k-1)/9(其实就是在构造k个1)
-
-在此基础上，我们分9次来计算每一行的贡献。对于第d行，设dpi,j表示前i位，有j位>=d,直接做数位dp即可
-
-所以此题的关键就是用1来组成数字，剩余的工作就都是很基础的了。不好想，只能说留个印象。
-
-```c++
-#include<bits/stdc++.h>
-using namespace std;
-#define ll long long
-#define endl '\n'
-const ll N=1e5+10;
-const ll mod=1e9+7;
-string n;
-ll a[710];
-ll cnt=0;
-ll dp[710][710]; 
-ll p[710];
-ll inv9;
-ll ksm(ll x,ll y)
-{
-	ll ans=1;
-	while(y)
-	{
-		if(y&1) ans=ans*x%mod;
-		x=x*x%mod;
-		y>>=1;
-	}
-	return ans;
-}
-ll inv(ll x)
-{
-	return ksm(x,mod-2);
-}
-void init()
-{
-	inv9=inv(9); 
-	ll now=1;
-	for(int i=1;i<=710;++i)
-	{
-		p[i]=((now*10%mod)-1+mod)%mod*inv9%mod;
-		now=now*10%mod;
-	}
-//	for(int i=1;i<=10;++i) cout<<p[i]<<endl;
-}
-ll dfs(ll x,ll op,ll pre,ll d)
-{
-	if(!x) return p[pre];
-	if(!op&&dp[x][pre]!=-1) return dp[x][pre];
-	ll tot=0;
-	ll lim=op?a[x]:9;
-	for(int i=0;i<=lim;++i)
-	{
-		if(i<d) tot=(tot+dfs(x-1,op&&i==lim,pre,d))%mod;
-		else tot=(tot+dfs(x-1,op&&i==lim,pre+1,d))%mod;
-	}
-	if(!op) dp[x][pre]=tot;
-	return tot;
-}
-ll f(string s)
-{
-	cnt=0;
-	int len=s.size();
-	for(int i=len-1;i>=0;--i)
-	{
-		a[++cnt]=s[i]-'0';
-	}
-	ll ans=0;
-	for(int i=1;i<=9;++i)
-	{
-		memset(dp,-1,sizeof dp);
-		ans=(ans+dfs(cnt,1,0,i))%mod;
-	}
-	return ans;
-}
-void solve()
-{
-	init();
-	cin>>n;
-	cout<<f(n)<<endl;
-}
-int main()
-{
-	ios::sync_with_stdio(0);cin.tie(0);cout.tie(0);
-	solve();
-	return 0;
-}
-```
-
-
-
-## 序列自动机
-
-```c++
-
-ll ne[N][30];
-void init()
-{
-	ll len=strlen(s+1);
-	for(int i=len;i;--i)
-	{
-		for(int j=0;j<26;++j) ne[i-1][j]=ne[i][j];
-	    ne[i-1][s[i]-'a']=i;
-	}
-}
-void solve()
-{//判断是否为子序列
-	cin>>(ss+1);
-	ll p=0;
-	for(int i=1;i<=strlen(ss+1);++i)
-	{
-		p=ne[p][ss[i]-'a'];
-		if(!p)
-		{
-			cout<<"No"<<endl;
-			return;
-		}
-	}
-	cout<<"Yes"<<endl;
-}
-```
 
 ## 坐标旋转
 
