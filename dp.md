@@ -794,22 +794,22 @@ $dp_i=min_{0\leq j<i}\{dp_j+|s_i-s_j-1-L|^P\}$,其中$s_i=i+\sum_{k=1}^{i}a_k$,$
 贴个模板
 
 ```
-//该模板适用于最小化问题，若求最大化，自行将对应不等号取反即可
-//cal(j,i):g_j(i)
-    ll que[N];//单调队列
+void Optimize()
+{
+    //该模板适用于最小化问题，若求最大化，自行将对应不等号取反即可
+    //cal()
     hd=1,tl=0;
     que[++tl]=0;ls[0]=1,rs[0]=n;
-	for(int i=1;i<=n;++i)
+    for(int i=1;i<=n;++i)
     {
         while(hd<tl&&rs[que[hd]]<i) hd++;//弹出无用点
         dp[i]=cal(que[hd],i);
-        pre[i]=que[hd];
-        while(hd<tl&&cal(i,ls[que[tl]])<=cal(que[tl],ls[que[tl]])) tl--;//弹出无用点
+        while(hd<tl&&cal(i,ls[que[tl]])<=cal(que[tl],ls[que[tl]])) tl--;//弹出无用点，若要求最大这里要改方向
         ll l=ls[que[tl]],r=n+1;
         while(l<=r)
         {
             ll mid=(l+r)>>1;
-            if(cal(i,mid)<=cal(que[tl],mid)) r=mid-1;
+            if(cal(i,mid)<=cal(que[tl],mid)) r=mid-1;//若要求最大这里要改方向
             //二分查找i与que[tl]的转移分界点，也就是最小的满足i优于que[tl]的点
             else l=mid+1;
         }
@@ -820,6 +820,7 @@ $dp_i=min_{0\leq j<i}\{dp_j+|s_i-s_j-1-L|^P\}$,其中$s_i=i+\sum_{k=1}^{i}a_k$,$
         que[++tl]=i;//插入队列
         ls[i]=p_ans,rs[i]=n;
     }
+}
 ```
 
 > Tips:二分决策区间边界的时候，右界设置为n+1,因为i有可能完全不如P优，要防一手

@@ -2611,7 +2611,7 @@ $\sum_{i=0}^{m}\binom{n}{i}\binom{m}{i}=\binom{n+m}{m}$
 
   有空盒：$\large \sum_{i=1}^{m}P_i(n)=\frac{1}{\prod_{i=1}^{m}(1-x^i)}[x^n]$
 
-  无空盒：$\large p_m(n)=\frac{1}{\prod_{i=1}^{m}(1-x^i)}[x^{n-m}]$
+  无空盒：$\large p_m(n)=\frac{1}{\prod_{i=1}^{m}(1-x^i)}[x^{n-m}]$(分拆数)
 
 ###  二项式定理及拓展
 
@@ -2676,6 +2676,10 @@ $S_1(n,k)=S_1(n-1,k-1)+(n-1)S_1(n-1,k)$
 重要性质：$n^x=\sum_{k=0}^{n}S_2(n,k)x^{\underline{k}}$
 
 $\sum_{i=0}^{n}i^k=\sum_{i=0}^{k}S(k,i)\frac{(n+1)^{\underline{i+1}}}{i+1}$
+
+关于n的指数生成函数：$\sum_{n\geq 0}S(n,k)\frac{x^n}{n!}=\frac{1}{k!}(exp(x)-1)^k$
+
+
 
 ### 贝尔数
 
