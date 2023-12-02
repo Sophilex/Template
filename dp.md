@@ -2614,5 +2614,387 @@ void solve()
 
 
 
+## 其它优化手段
 
+### 矩阵乘法加速
+
+将$f_i$看成一个向量，从$f_i$向$f_{i+1}$转移如果可以用一个确定的矩阵$A$来表示，那么我们就可以用矩阵快速幂来加速运算了，毕竟矩阵乘法满足结合律
+
+### 位运算加速
+
+比如对于一些dp键值类型为bool的dp方程，就可以用位运算来打包运算
+
+### 优化状态数
+
+
+
+### 分离状态中的无关变量
+
+<img src="Pic\Dp Optimization\P9.png" alt="image-20230917100803071" style="zoom:50%;" />
+
+不难想到用$f(u,d,l,r)$来表示能否将纸折到以u为顶，以d为底，以l为最左侧，以r为最右侧，那么最终答案就是所有值为1的f状态的数量
+
+
+
+
+
+### Slope Trick
+
+简要题意：给定 $n$ 个正整数 $a_i$，每次操作可以将任意一个元素加一或减一，问使得原序列严格递增的最小操作次数。
+
+首先发现严格递增这个东西我们有一个套路的方式就是令 $a_i←a_{i−1}$，于是这样就变成了严格不降。
+
+然后我们有一个简略的 DP 方程。设 $f_{i,j}$ 表示将 $a_i$ 变成 $j$，使得 $[1,i]$ 的数列不降所需要的最小操作次数，那么有：
+
+$f_{i,j}=\min_{1≤k≤j}\{f_{i−1,k}\}+|a_i−j|$ 这个 DP 方程还是比较简单的吧
+
+这样，我们就能够在 $O(n^2)$ 的复杂度内赛时解决这道题，当然在 $n≤10^5$ 的情况下是过不了的。
+
+此时 Slope Trick 就可以派上用场了。
+
+首先我们需要知道 Slope Trick 能够优化什么问题：通常情况下，Slope Trick 能够解决的是一类凸函数问题。
+
+啥意思呢？
+
+比如说这道题的 DP 方程，我们首先转变一下式子：记 $F_i(x)$ 为 $f_{i,x}$，定义 $G_i(x)=\min_{1≤k≤x}\{f_{i,k}\}$。
+
+那么式子就是 $F_i(x)=G_{i−1}(x)+|a_i−x|$。
+
+然后仔细研究这个函数，我们会发现这个函数有下凸性质，画出来大概是这个样子：
+
+<img src="https://img-blog.csdnimg.cn/4409b7da28db4b2b9a5371e1510d4361.png?x-oss-process=image/watermark,type_ZHJvaWRzYW5zZmFsbGJhY2s,shadow_50,text_Q1NETiBAUGxvemlh,size_20,color_FFFFFF,t_70,g_se,x_16" alt="在这里插入图片描述" style="zoom:50%;" />
+
+需要注意的是，前面 $F_i(x)$ 递减部分确实是个下凸包，但是后半部分不一定。
+
+我们记 $h(i)$ 表示当 $x=h(i)$ 时 $F_i(x)=G_i(x)$，也就是函数 $F_i(x)$ 取到最小值的地方。
+
+然后我们重新看一下这个方程：$F_i(x)=G_{i−1}(x)+|a_i−x|$。
+
+我们发现这个式子很有意思：我们只需要快速维护 $G_i(x)$ 就可以了。
+
+具体怎么维护呢？
+
+其实对于这种分段函数且各函数都是一次函数的情况下，有一种快速的方法维护最小值：维护所有分段点以及最右端一次函数即可。
+
+比如说还是上图，可以发现我们只需要维护下图的红点和红线即可：
+
+<img src="https://img-blog.csdnimg.cn/35c08c89b1d540c883d4433a5186f1a1.png?x-oss-process=image/watermark,type_ZHJvaWRzYW5zZmFsbGJhY2s,shadow_50,text_Q1NETiBAUGxvemlh,size_20,color_FFFFFF,t_70,g_se,x_16" alt="在这里插入图片描述" style="zoom:50%;" />
+
+特别需要注意的是如果两个相邻段的斜率之差大于 1，那么这个关键点是要存两遍的。
+
+那么现在我们来讨论如何通过所有已知的 $F_{i−1}(x)$ 和 $G_{i−1}(x)$ 来快速维护 $F_i(x)$。
+
+有几个关键点：
+
+1. 我们画出 $F_i(x)$ 的大致图像后，结合状态转移方程，发现在 $h(i)$ 前的所有函数斜率递减，在 $h(i)$ 之后的所有函数斜率递增。
+2. 其实 $F_i(x)$ 是在 $F_{i−1}(x)$ 上的叠加。
+3. $h(i)$ 处这个点左右两个函数的斜率一个是正的，一个是负的。
+4. 实际上所有斜率为正的点在计算的时候是无用的，因为我们的转移是从 $F_{i−1}(x)$ 转移到 $F_i(y),x\leq y$，所以我们需要 $F_i(y)$ 数据的时候完全可以直接从 $F_{i−1}(x)$ 推过来。
+
+根据上面的第四点，我们只需要维护所有左边的函数斜率小于 0 的关键点即可，也就是下面这些蓝色的点：
+
+<img src="https://img-blog.csdnimg.cn/9337466d2a31499eae6d60c3e04ce357.png?x-oss-process=image/watermark,type_ZHJvaWRzYW5zZmFsbGJhY2s,shadow_50,text_Q1NETiBAUGxvemlh,size_20,color_FFFFFF,t_70,g_se,x_16" alt="在这里插入图片描述" style="zoom:50%;" />
+
+然后我们讨论一下 $h(i−1)$ 和 $a_i$ 的关系：
+
+* $h(i−1)\leq ai$
+
+这个情况下你会发现，我们在函数叠加的时候，所有 $x<h(i)$ 的点其纵坐标之差加一，用式子表达就是所有 $F_i(x)−F_i(x−1)$ 都降低了 1，从斜率角度来看就是斜率全部递减 1。
+
+从贪心的角度来理解，此时此刻你没必要将 $a_i$ 减小到 $h(i−1)$，因为这个时候 $h(i)=a_i$，肯定是当前最优的解。
+
+至于如果后面的 $a_{i+1}$ 远小于 $a_i$，那就是另外一个情况要讨论的事情了。
+
+于是我们只需要将 $a_i$ 这个点丢进我们的关键点里面，然后这个点就做完了。
+
+* $h(i−1)>a_i$
+
+此时不难发现$F_i$的最小值一定是在$h(i-1)$处取得的，所以此处对答案的贡献是一个$h(i-1)-a_i$(可能在$h(i-1)-1$处取得的值也是最小的，但是删掉$h(i-1)$一定不劣)
+
+然后我们发现对于所有 $x<a_i$，所有 $F_i(x)−F_i(x−1)$ 都降低了 1，而对于所有 $h(i−1)\geq x>a_i$，所有 $F_i(x)−F_i(x−1)$ 都升高了 1，这个同样也能从斜率角度来理解。
+
+此时我们发现在 $a_i$ 这个关键点出现了问题，因为这个时候整个函数已经被改变了，由于 $h_(i−1)>a_i$，此时 $a_i$ 这个地方左右斜率相差大于 1 了，因此我们需要将 $a_i$ **两次**丢进我们的关键点里面。
+
+最后将 $h(i−1)$ 丢出队列，因为这个时候在 $h(i−1)$ 这个地方因为 $a_i$ 的影响使得最后的位置斜率升高了，这个点不再是我们的最小值点了$(h(i)\neq h(i−1))$，所以我们需要将 $h(i−1)$ 丢出队列。
+
+有人可能会问：会不会存在在一个同样的值 x 出现 4 个或者更多的关键点都是 x 呢？
+
+这个情况吗……emm……确实是存在的，但是我们需要知道这道题的一个显然结论：
+
+* 将 $a_{i−1}$ 改到 $a_i$ 和将 $a_i$ 改到 $a_{i−1}$ 的贡献是一样的。
+
+据此，实际上我们会发现将 $a_i,a_{i−1}$ 改成两者较小一定是更优的，因为这样后面的一些小数就可以花费较少的花费达到严格不降得目的。
+
+↑上述问题其实也是我在学习的时候遇到的一个问题。
+
+现在讨论完了两种情况，我们发现实际上我们只需要维护一个优先队列就可以完成快速维护关键点的工作。
+
+而快速维护关键点实质上就是快速维护 $F_i(x)$，也就是快速得到 $G_i(x)$。
+
+那么最后答案当然就是 $F_n(h(n))$ 啦~
+
+实际操作的时候我们不需要另外开一个 `f[]` 来存下所有的 Gi(max(ai,h(i−1))（对的，是这玩意），只需要一个 `ans` 算贡献就好，因为我们的全部过程只需要利用到 Fi−1 的相关信息。
+
+代码如下：
+
+```cpp
+int main()
+{
+	n = Read();
+	for (int i = 1; i <= n; ++i) a[i] = Read() - i;
+	for (int i = 1; i <= n; ++i)
+	{
+		q.push(a[i]);
+		if (q.top() > a[i])
+		{
+			ans += q.top() - a[i];
+			q.pop(); q.push(a[i]);
+		}
+	}
+	printf("%lld\n", ans);
+	return 0;
+}
+```
+
+#### 总结
+
+Slope Trick 通常解决的是这样一类问题：
+
+* DP 中维护的 f 数据具有凸性。
+* 可以通过维护关键点和最右端的一次函数来快速处理最大/最小值。
+
+推荐练习题：[P3642 APIO2016烟火表演](https://www.luogu.com.cn/problem/P3642)。
+
+
+
+### 利用不等式优化转移顺序（略抽象）
+
+#### 排序不等式：
+
+<img src="Pic\Dp Optimization\P10.png" alt="image-20230917100803071" style="zoom:50%;" />
+
+逆序和$\leq $乱序和$\leq $顺序和
+
+ 前言：国庆没事干，阿宅只能做做水题找找快乐。。。
+
+[最大收益](https://www.luogu.com.cn/problem/P2647)
+
+大意：
+
+![img](https://img-blog.csdnimg.cn/0851e77d6aa945e3b4c48fdc9d22f4c5.png)![点击并拖拽以移动](data:image/gif;base64,R0lGODlhAQABAPABAP///wAAACH5BAEKAAAALAAAAAABAAEAAAICRAEAOw==)编辑
+
+n<=3000，0<=Wi,Ri<=200000
+
+
+
+思路：
+
+不难想到dp。
+
+考虑要怎么设？因为说了n件里面可以选任意数量个，所以我们可以设dpi,j表示前i件里面选j件，这个是显然的，然后最后n个里面取max就可以了。并且，第一件的选取不需要考虑减少的增益，所以我们肯定不会选0件。
+
+考虑如何转移？题解的思路我觉得挺妙的。因为正着转移的话， 会存在后效性，所以我们可以试着倒着选取物品。如果第i件物品现在要加入选择的集合的话，我们就让它作为第一个选取的物品，那么它的贡献就是wi-ri(j-1),这个显然。
+
+如此的话，其实dp方程就列出来了，
+
+> dp[i][j]=max(dp[i-1][j],dp[i-1][j-1]+mas[i].a-mas[i].b*(j-1));（mas[i].a->wi,mas[i].b->ri）
+
+但其实这样的话还并不是很合理，因为物品的选择顺序很明显会影响最后的答案，但是我们的转移方程其实意味着我们的枚举顺序就决定了物品的选择顺序，只不过是倒序的而已，但仍然是不合理的。
+
+但是，但是，再深入地想一下，其实选择顺序只会影响减少的收益ri，而wi并不会受影响，所以我们的选择顺序实际上是要满足Σri*(j-1)最小，而转移时j-1一定是升序的。那么，很明显，这里就要用到我们在娘胎里时就会的排序不等式了。
+
+（摘自百度）
+
+![img](https://img-blog.csdnimg.cn/1a400ba9a64a4493b0e175cca5924736.png)![点击并拖拽以移动](data:image/gif;base64,R0lGODlhAQABAPABAP///wAAACH5BAEKAAAALAAAAAABAAEAAAICRAEAOw==)编辑
+
+ 也就是，顺序和>=乱序和>=逆序和
+
+所以我们只要让ri逆序排序即可，然后我们的转移式就具备合理性了。
+
+code：
+
+```cpp
+#include<bits/stdc++.h>
+using namespace std;
+#define ll long long
+#define endl '\n'
+const ll N=3010;
+ll n;
+struct ty
+{
+	ll a,b;
+}mas[N];
+ll dp[N][N];
+bool cmp(ty a,ty b)
+{
+	return a.b>b.b;
+}
+void solve()
+{
+	cin>>n;
+	for(int i=1;i<=n;++i) cin>>mas[i].a>>mas[i].b;
+	sort(mas+1,mas+1+n,cmp);
+	for(int i=1;i<=n;++i)
+	{
+		for(int j=1;j<=i;++j)
+		{
+			dp[i][j]=max(dp[i-1][j],dp[i-1][j-1]+mas[i].a-mas[i].b*(j-1));
+		}
+	}
+	ll ma=0;
+	for(int i=1;i<=n;++i)
+	{	
+		ma=max(ma,dp[n][i]);
+	}
+	cout<<ma<<endl;
+}
+int main()
+{
+	solve();
+	return 0;
+}
+```
+
+## 一种套路：dp加容斥来计数
+
+[cf Round 511 A](https://codeforces.com/problemset/problem/1034/A)
+
+不妨先将所有元素都除以gcd，那么现在整体gcd=1，问题变成我们需要删除最少的数字使其>1。显然枚举数x，然后查看x的倍数有多少即可
+
+事实上可以直接枚举质因子，这样复杂度就是$O(nlonglogn+kn)$的,k为范围内质数个数
+
+[cf Round 904 D](https://codeforces.com/contest/1884/problem/D)
+
+询问数组里有多少个有序对满足数组中不存在它们的公因数
+
+考虑以i为最大公因子的点对$(a,b)$,若$c|a,c|b$,则必有$c|i$.所以完全可以统计每一个i作为gcd的点对的个数，然后减去那些在数组中有其它因子的数的贡献即可
+
+考虑$cnt_i$表示以i为因子的数的个数，则gcd=i的点对数$dp_i=\binom{cnt_i}{2}-\sum dp_{ki},k\geq 2$，这里也用到了容斥的思想
+
+```c++
+#include<bits/stdc++.h>
+using namespace std;
+#define ll long long
+#define endl '\n'
+const  ll N=1e6+10;
+const ll mod=1e9+7;
+ll gt(ll x)
+{
+    return x*(x-1)/2;
+}
+ll n;
+ll a;
+ll cnt[N];
+ll num[N];
+ll rvis[N];
+ll dp[N];//__gcd=i的点对数
+ll up[N];
+void rinit()
+{
+    for(int i=1;i<=n;++i)
+    {
+        for(int j=i;j<=n;j+=i) up[i]+=cnt[j];
+    }
+
+    for(int i=1;i<=n;++i) dp[i]=gt(up[i]);
+    for(int i=n;i;--i)
+    {
+        for(int j=i*2;j<=n;j+=i) dp[i]-=dp[j];
+    }
+}
+void init()
+{
+    for(int i=1;i<=n+2;++i) num[i]=up[i]=cnt[i]=rvis[i]=0;
+}
+void solve()
+{
+    cin>>n;
+    init();
+    for(int i=1;i<=n;++i) cin>>a,cnt[a]++;
+    rinit();
+    ll sum=0;
+    for(int i=1;i<=n;++i)
+    {
+        if(cnt[i]==0) continue;
+        for(int j=i;j<=n;j+=i) rvis[j]=1;
+    }
+    for(int i=1;i<=n;++i)
+    {
+        if(rvis[i]==0) sum+=dp[i];
+    }
+    cout<<sum<<endl;
+
+}
+signed main()
+{
+    // freopen("w.out","w",stdout);
+    ios::sync_with_stdio(0);cin.tie(0);cout.tie(0);
+    ll t;cin>>t;while(t--)
+    solve();
+    return 0;
+}
+
+```
+
+事实上也可以用莫比乌斯反演来解决这道题。因为实际上是要算$\sum_{i=1}^{n}\sum_{j=1}^{n}f_{gcd(a_i,a_j)}$,其中$f_d$表示[数组中不存在d的因子]，这个的处理详见Math板子（积性函数）
+
+[cf Round 911 D](https://codeforces.com/contest/1900/problem/D)
+
+定义$(a,b,c)=(a,b)(a\leq b\leq c)$，求数组中所有三元组的gcd之和（$a_i\leq 8e4,n\leq 1e5$）
+
+排序之后，从小到大枚举b，假设枚举到第i个元素，那么贡献就是b与它前面的所有a的贡献之和$*(n-i)$
+
+贡献之和可以考虑枚举gcd来算，因为每一个数字的因子最多100个左右。$\forall d|b,ans+=f_d*d$ 这里ans就是b的总贡献，$f_d$就是$[1,i-1]$之间满足$(a_i,b)=d$的i的个数。现在问题是怎么算f。可以用cnt来记录每一个数字的倍数的个数，那么$f_d=cnt_d-\sum cnt_{kd}$
+
+```c++
+void init(ll n)
+{
+    for(int i=1;i<=n;++i)
+    {
+        for(int j=1;j*j<=i;++j)
+        {
+            if(i%j) continue;
+            vt[i].push_back(j);
+            if(j*j!=i) vt[i].push_back(i/j);
+        }
+        sort(vt[i].begin(),vt[i].end());
+    }
+}
+void solve()
+{
+    for(int i=1;i<=100000;++i) cnt[i]=f[i]=0;
+    cin>>n;
+    for(int i=1;i<=n;++i) cin>>mas[i];
+    sort(mas+1,mas+1+n);
+    ll ans=0;
+    for(int i=1;i<=n;++i)
+    {
+        // cout<<mas[i]<<" ";
+        for(int j=vt[mas[i]].size()-1;j>=0;--j)
+        {
+            ll val=vt[mas[i]][j];
+            f[val]+=cnt[val];
+            ans+=(n-i)*val*f[val];
+            for(auto k:vt[val]) f[k]-=f[val];
+                // cout<<val<<" "<<f[val]<<endl;
+        }
+        for(auto x:vt[mas[i]])
+        {
+            cnt[x]++;
+            f[x]=0;
+        }
+    }
+    cout<<ans<<endl;
+}
+```
+
+[Coprime subsequence](https://codeforces.com/contest/803/problem/F)
+
+求数组里有多少个子序列满足gcd=1
+
+还是老思路，$ans_i$表示gcd恰为i的子序列个数，我们可以先算$f_i$表示gcd为i的倍数的子序列的个数
+
+对于$f_i$,我们可以记$cnt_i$表示以i为因子的数的个数，那么$f_i=2^{cnt_i}-1$
+
+$ans_i=f_i-\sum ans_{ki},k\geq 2$
 
