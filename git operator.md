@@ -1,4 +1,4 @@
-# git 操作
+git 操作
 
 ## 远程代码覆盖本地
 
@@ -55,3 +55,8 @@ gti push
 
 ```
 
+
+
+
+
+![image-20231204114345356](https://s2.loli.net/2023/12/04/3JfwKA9hHSsVxi7.png)

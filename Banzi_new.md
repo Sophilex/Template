@@ -932,21 +932,31 @@ ll tree_sum(ll x,ll y)
 ---
 
 ```c++
-//偷的板子
-struct Linear_basis{//默认不考虑空集 
-    long long d[65];//数组d表示序列 A的线性基  
-    int tot; 
-    bool flag;
+struct Linear_basis{//默认不考虑空集
+    int max_power=20;
+    int d[25];//数组d表示序列 A的线性基
+    int pos[25];
+    int tot;//线性基大小
+    bool flag;//线性基是否满
     void init(){
         tot=flag=0;
-        for(int i=0;i<=60;i++)d[i]=0;
-    } 
-    void add(long long x){
-        for(int i=60;i>=0;i--){
+        for(int i=0;i<=max_power;i++)d[i]=0;
+    }
+    void insert(int Pos,int x){
+        for(int i=max_power;i>=0;i--){
             if(x>>i&1){
-                if(d[i])x^=d[i];
+                if(d[i])
+                {
+                    if(dep[Pos]>dep[pos[i]])
+                    {
+                        swap(Pos,pos[i]);
+                        swap(d[i],x);
+                    }
+                    x^=d[i];
+                }
                 else {
                     d[i]=x;
+                    pos[i]=Pos;
                     tot++;
                     break;
                 }
@@ -954,42 +964,37 @@ struct Linear_basis{//默认不考虑空集
         }
         return;
     }
-//  long long get_mx(){
-//      long long ans=0;
-//      for(int i=60;i>=0;i--)
-//          if((ans^d[i])>ans)ans^=d[i];
-//      return ans;
-//  }
-//  long long get_mi(){
-//      if(tot<n)return 0;
-//      for(int i=0;i<=60;i++)if(d[i])return d[i];
-//      return -1;
-//  }
-//  void sort(){
-//      if(flag)return;
-//      for(int i=1;i<=60;i++){
-//          for(int j=i-1;j>=0;j--){
-//              if(d[i]>>j&1)d[i]^=d[j];
-//          }
-//      }
-//      flag=1;
-//      return;
-//  }
-//  long long get_K(long long K){
-//      //讨论能否得到0 
-//      if(K==1&&tot<n)return 0;
-//      if(tot<n)K--;
-//      sort();
-//      long long ans=0;
-//      for(int i=0;i<=60;i++){ 
-//          if(d[i]>0){
-//              if(K&1)ans^=d[i];
-//              K>>=1;
-//          }
-//      } 
-//      return ans;
-//  }
-}S;
+    int get_mx(){
+        int ans=0;
+        for(int i=max_power;i>=0;i--)
+            if((ans^d[i])>ans)ans^=d[i];
+        return ans;
+    }
+    int get_mi(){
+        if(tot<n)return 0;
+        for(int i=0;i<=max_power;i++)if(d[i])return d[i];
+        return -1;
+    }
+    void sort(){
+        if(flag)return;
+        for(int i=1;i<=max_power;i++){
+            for(int j=i-1;j>=0;j--){
+                if(d[i]>>j&1)d[i]^=d[j];
+            }
+        }
+        flag=1;
+        return;
+    }
+    int get_K(int K){
+        for(int i=max_power;i>=0;i--){
+            if(K>>i&1){
+                if(d[i]) K^=d[i];
+                else return 0;
+            }
+        }
+        return (K>0?0:1);
+    }
+};
 ```
 
 
@@ -1092,19 +1097,7 @@ void solve()
 tips：当线性基个数cnt小于 n 时，说明非满秩，所有结果中可以异或出 0，这样看来第 1 小得为 0 而非p[0],所以对k 减一。总的异或结果是不超过$2^{cnt}-1$的。
 
 ```c++
-//#pragma GCC optimize("O3")
-//#pragma GCC optimize("unroll-loops")
-#include<iostream>
-#include<algorithm>
-#include<vector>
-#include<cstring>
-
-using namespace std;
-typedef long long ll;
-const int maxn=55;
-
 ll p[maxn],f[maxn],cnt,n,m,ans,u,v,w;
-
 inline void insert(ll x)
 {
 	for(int i=50;i>=0;i--)
@@ -1172,6 +1165,177 @@ $ans=2^{n-k}-1$
 ### 求数组在$[1,R]$内异或出的最大值
 
 仿照求数组异或第k小中的思路，重新构造线性基，使p[i]的第 j 位在p[j]存在的情况下不为 1，这样异或p[j]一定使数值变大，抽象化为二进制便是取 p [ j ]相当于 j 位取 1。记最终答案为ans，初始为0。那么我们只要从高位往低位遍历，如果某一位的线性基$\leq R$,直接贪心让ans异或上这个结果，并将R也异或上这个结果即可，证明显然。
+
+### 区间线性基
+
+树上要求快速维护点对之间简单路径的所有点的线性基。可以首先预处理每一个点到根节点的线性基，并且要求高位的向量对应的深度尽可能大
+
+```c++
+void insert(int Pos,int x){
+        for(int i=max_power;i>=0;i--){
+            if(x>>i&1){
+                if(d[i])
+                {
+                    if(dep[Pos]>dep[pos[i]])
+                    {
+                        swap(Pos,pos[i]);
+                        swap(d[i],x);
+                    }//高位向量的深度尽可能大在这里体现
+                    x^=d[i];
+                }
+                else {
+                    d[i]=x;
+                    pos[i]=Pos;
+                    tot++;
+                    break;
+                }
+            }
+        }
+        return;
+    }
+```
+
+那么要维护$x,y$之间路径上的线性基，只要求出$Lca$,设其深度为$d$,那么我们只要将$x,y$到根节点的两个线性基合并，并且在合并时只取出向量对应点的深度$\geq d$的向量即可
+
+时间复杂度$O((n+q)log^2)$
+
+模板题：q次询问两点之间线性基异或的最大值
+
+```c++
+ll n,q,a,b;
+ll mas[N],dep[N],fa[30][N];
+struct Linear_basis{//默认不考虑空集
+    int max_power=60;
+    ll d[65];//数组d表示序列 A的线性基
+    int pos[65];
+    int tot;//线性基大小
+    bool flag;//线性基是否满
+    void init(){
+        tot=flag=0;
+        for(int i=0;i<=max_power;i++)d[i]=0;
+    }
+    void insert(int Pos,ll x){
+        for(int i=max_power;i>=0;i--){
+            if(x>>i&1){
+                if(d[i])
+                {
+                    if(dep[Pos]>dep[pos[i]])
+                    {
+                        swap(Pos,pos[i]);
+                        swap(d[i],x);
+                    }
+                    x^=d[i];
+                }
+                else {
+                    d[i]=x;
+                    pos[i]=Pos;
+                    tot++;
+                    break;
+                }
+            }
+        }
+        return;
+    }
+    ll get_mx(){
+        ll ans=0;
+        for(int i=max_power;i>=0;i--)
+            if((ans^d[i])>ans)ans^=d[i];
+        return ans;
+    }
+    int get_mi(){
+        if(tot<n)return 0;
+        for(int i=0;i<=max_power;i++)if(d[i])return d[i];
+        return -1;
+    }
+    void sort(){
+        if(flag)return;
+        for(int i=1;i<=max_power;i++){
+            for(int j=i-1;j>=0;j--){
+                if(d[i]>>j&1)d[i]^=d[j];
+            }
+        }
+        flag=1;
+        return;
+    }
+    int get_K(int K){
+        for(int i=max_power;i>=0;i--){
+            if(K>>i&1){
+                if(d[i]) K^=d[i];
+                else return 0;
+            }
+        }
+        return (K>0?0:1);
+    }
+};
+Linear_basis lb[N];
+void dfs(ll id,ll p)
+{
+    dep[id]=dep[p]+1;
+    fa[0][id]=p;
+    lb[id]=lb[fa[0][id]];
+    lb[id].insert(id,mas[id]);
+    for(int i=head[id];i!=-1;i=edge[i].next)
+    {
+        ll y=edge[i].t;
+        if(y==p) continue;
+        dfs(y,id);
+    }
+}
+void st_init()
+{
+    for(int i=1;i<=25;++i)
+        for(int j=1;j<=n;++j)
+            fa[i][j]=fa[i-1][fa[i-1][j]];
+}
+ll gt_lca(ll x,ll y)
+{
+    if(dep[x]<dep[y]) swap(x,y);
+    for(int i=25;i>=0;--i) if(dep[fa[i][x]]>=dep[y]) x=fa[i][x];
+    if(x==y) return x;
+    for(int i=25;i>=0;--i)
+    {
+        if(fa[i][x]!=fa[i][y])
+        {
+            x=fa[i][x];
+            y=fa[i][y];
+        }
+    }
+    return fa[0][x];
+}
+Linear_basis D;
+void solve()
+{
+    memset(head,-1,sizeof head);
+    cin>>n>>q;
+    for(int i=1;i<=n;++i) cin>>mas[i];
+    for(int i=1;i<n;++i)
+    {
+        cin>>a>>b;
+        add(a,b);add(b,a);
+    }
+    dfs(1,0);
+    st_init();
+    while(q--)
+    {
+        cin>>a>>b;
+        ll Lca=gt_lca(a,b);
+        for(int i=60;i>=0;--i)
+        {
+            if(dep[lb[a].pos[i]]>=dep[Lca]) D.d[i]=lb[a].d[i];
+            else D.d[i]=0;
+        }
+        for(int i=60;i>=0;--i)
+        {
+            if(dep[lb[b].pos[i]]<dep[Lca]) continue;
+            ll val=lb[b].d[i];
+            D.insert(lb[b].pos[i],val);
+        }
+        cout<<D.get_mx()<<endl;
+    }
+}
+```
+
+
 
 ### Tip
 
@@ -3630,3 +3794,50 @@ double ars(double a,double b,double eps){  //积分区域a~b,eps为题目要求�
 注意事项：
 
 * 存在误差，在时间复杂度允许时，建议开大精度范围
+
+## 笛卡尔树
+
+满足：
+
+* 二叉搜索树的性质：按照中序遍历可以得到原数组
+* 二叉堆的性质：每一个节点的val小于其左右儿子的val
+
+性质：
+
+每一个点的子树是一段连续区间
+
+构造：
+
+通过单调栈实现
+
+**加入一个元素时，将栈中自上而下第一个比它小的元素（如果有的话）作为它的父亲节点，使加入的元素成为它父亲节点的右儿子。而最后一个比它大的元素（如果有的话）则作为它的左儿子。**
+
+<img src="https://s2.loli.net/2023/12/20/xQhM68VmKuzPaZw.png" alt="image-20231220094844765" style="zoom:67%;" />
+
+```c++
+ll st=1,ed=0;
+struct ty
+{
+    ll val;
+    ll ls,rs;
+}mas[N];
+ll pre=0;
+void solve()
+{
+    cin>>n;
+    for(int i=1;i<=n;++i)
+    {
+        cin>>mas[i].val;
+        pre=0;
+        while(ed>=st&&mas[que[ed]].val>mas[i].val)
+        {
+            pre=que[ed];
+            ed--;
+        }
+        if(ed>=st) mas[que[ed]].rs=i;
+        mas[i].ls=pre;
+        que[++ed]=i;
+    }
+}
+```
+
