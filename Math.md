@@ -1158,7 +1158,7 @@ $\Large =\frac{1−∑_{d=2}^{n}g(d)S(⌊\frac{n}{d}⌋)}{1}=$$\large 1−∑_{d
 
 构造函数 g(n)=1(n)，容易得到 $f∗g=id_1$,套用公式
 
-<img src="C:/Users/26463/Desktop/Major/typo_r_a/Pic/DujiaoShai/P1.png" alt="image-20230819162004418" style="zoom:70%;" />
+![image-20240107170025491](https://s2.loli.net/2024/01/07/GLonO7NSUIakD2l.png)
 
 同样可以套用模板去做
 
@@ -1168,11 +1168,11 @@ $\Large =\frac{1−∑_{d=2}^{n}g(d)S(⌊\frac{n}{d}⌋)}{1}=$$\large 1−∑_{d
 
 构造函数 $g(n)=id_1(n)$
 
-<img src="C:/Users/26463/Desktop/Major/typo_r_a/Pic/DujiaoShai/P2.png" alt="image-20230819162034122" style="zoom:70%;" />
+![image-20240107170040468](C:\Users\acm-673\AppData\Roaming\Typora\typora-user-images\image-20240107170040468.png)
 
 接着套用公式
 
-<img src="C:/Users/26463/Desktop/Major/typo_r_a/Pic/DujiaoShai/P3.png" alt="image-20230819162047244" style="zoom:70%;" />
+![](https://s2.loli.net/2024/01/07/LoEvUWFPSakYZKX.png)
 
 因为 $g(n)=id_1(n)$，所以可以 $O(1)$ 计算前缀和，同样可以套用模板去做
 
@@ -1182,11 +1182,11 @@ $\Large =\frac{1−∑_{d=2}^{n}g(d)S(⌊\frac{n}{d}⌋)}{1}=$$\large 1−∑_{d
 
 构造函数 $g(n)=id_1(n)$
 
-<img src="C:/Users/26463/Desktop/Major/typo_r_a/Pic/DujiaoShai/p4.png" alt="image-20230819162102054" style="zoom:70%;" />
+![image-20240107170141031](https://s2.loli.net/2024/01/07/lKkTu5j1gXyrIFZ.png)
 
 接着套用公式
 
-<img src="C:/Users/26463/Desktop/Major/typo_r_a/Pic/DujiaoShai/p5.png" alt="image-20230819162114520" style="zoom:70%;" />
+![image-20240107170156629](https://s2.loli.net/2024/01/07/nXzIiu1kT9WAVfc.png)
 
 然后套用模板去做就行了
 
@@ -1196,11 +1196,11 @@ $\Large =\frac{1−∑_{d=2}^{n}g(d)S(⌊\frac{n}{d}⌋)}{1}=$$\large 1−∑_{d
 
 构造函数 $g(n)=id_2(n)$
 
-<img src="C:/Users/26463/Desktop/Major/typo_r_a/Pic/DujiaoShai/p6.png" alt="image-20230819162114520" style="zoom:70%;" />
+![image-20240107170212334](C:\Users\acm-673\AppData\Roaming\Typora\typora-user-images\image-20240107170212334.png)
 
 接着套用公式
 
-<img src="C:/Users/26463/Desktop/Major/typo_r_a/Pic/DujiaoShai/p7.png" alt="image-20230819162114520" style="zoom:70%;" />
+![](https://s2.loli.net/2024/01/07/3akAKvgeqWrHQtO.png)
 
 因为 $g(n)=id_2(n)$，所以前缀和直接就是 $n(n+1)(2n+1)/6$，同样可以套用模板去做
 
@@ -1210,11 +1210,11 @@ $\Large =\frac{1−∑_{d=2}^{n}g(d)S(⌊\frac{n}{d}⌋)}{1}=$$\large 1−∑_{d
 
 构造 $g(n)=id_2(n)$
 
-<img src="C:/Users/26463/Desktop/Major/typo_r_a/Pic/DujiaoShai/p8.png" alt="image-20230819162114520" style="zoom:70%;" />
+![image-20240107170312696](https://s2.loli.net/2024/01/07/VQblIHRz7WjUa3Z.png)
 
 接着套用公式
 
-<img src="C:/Users/26463/Desktop/Major/typo_r_a/Pic/DujiaoShai/p8.png" alt="image-20230819162114520" style="zoom:70%;" />
+![image-20240107170329193](https://s2.loli.net/2024/01/07/jqxwNk1a2sBLQKR.png)
 
 $∑g(d)$的求法跟上面一样，接着还是套用模板去做就行了
 
